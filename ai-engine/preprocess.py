@@ -1,6 +1,6 @@
 import cv2
 import whisper
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 import os
 import sys
 

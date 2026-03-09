@@ -19,7 +19,7 @@ exports.uploadVideo = async (req, res) => {
     // Call Python AI script
     
     exec(
-  `python ai-engine/preprocess.py uploads/${req.file.filename}`,
+  `python ai-engine/preprocess.py "uploads/${req.file.filename}"`,
   async (error, stdout, stderr) => {
 
     if (error) {
