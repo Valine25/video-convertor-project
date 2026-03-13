@@ -13,7 +13,12 @@ const videoSchema = new mongoose.Schema({
     default: "uploaded"
   },
   transcript: String,
-  highlights: [highlightSchema],
+  highlights: [
+  {
+    start: Number,
+    end: Number
+  }
+  ],
   hashtags: [String],
   score: Number
 }, { timestamps: true });
