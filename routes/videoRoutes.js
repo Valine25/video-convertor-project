@@ -3,6 +3,7 @@ const multer = require("multer");
 const router = express.Router();
 const videoController = require("../controller/videoController");
 
+// Multer config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -12,8 +13,12 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
+// Upload API
 router.post("/upload", upload.single("video"), videoController.uploadVideo);
+
+// 🔥 GET API (VERY IMPORTANT FOR DEMO)
+router.get("/:id", videoController.getVideoById);
 
 module.exports = router;

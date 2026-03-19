@@ -3,11 +3,14 @@ import whisper
 from moviepy import VideoFileClip
 import os
 import sys
+import shutil
 
-sys.stdout.reconfigure(encoding='utf-8')
 video_path = sys.argv[1]
 
-# Create output folders
+# Clean frames
+if os.path.exists("ai-engine/frames"):
+    shutil.rmtree("ai-engine/frames")
+
 os.makedirs("ai-engine/frames", exist_ok=True)
 os.makedirs("ai-engine/audio", exist_ok=True)
 
@@ -15,8 +18,12 @@ os.makedirs("ai-engine/audio", exist_ok=True)
 # 1. Extract Audio
 # -------------------------
 video = VideoFileClip(video_path)
-audio_path = "ai-engine/audio/audio.wav"
+
+filename = os.path.basename(video_path).split('.')[0]
+audio_path = f"ai-engine/audio/{filename}.wav"
+
 video.audio.write_audiofile(audio_path)
+video.close()
 
 print("Audio extracted")
 
@@ -34,9 +41,7 @@ while True:
     if not ret:
         break
 
-    # Save one frame per second
-    # if int(frame_count % frame_rate) == 0:
-    if frame_count % (frame_rate * 2) == 0:
+    if frame_count % int(frame_rate * 2) == 0:
         frame_name = f"ai-engine/frames/frame_{frame_count}.jpg"
         cv2.imwrite(frame_name, frame)
 
@@ -47,15 +52,12 @@ cap.release()
 print("Frames extracted")
 
 # -------------------------
-# 3. Speech to Text
+# 3. Speech-to-Text
 # -------------------------
 model = whisper.load_model("base")
-
 result = model.transcribe(audio_path)
 
 transcript = result["text"]
 
 print("Transcript generated")
-
-# Print result so Node.js can read it
 print(transcript)

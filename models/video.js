@@ -1,10 +1,5 @@
 const mongoose = require("mongoose");
 
-const highlightSchema = new mongoose.Schema({
-  start: Number,
-  end: Number
-});
-
 const videoSchema = new mongoose.Schema({
   filename: String,
   originalName: String,
@@ -14,10 +9,10 @@ const videoSchema = new mongoose.Schema({
   },
   transcript: String,
   highlights: [
-  {
-    start: Number,
-    end: Number
-  }
+    {
+      start: Number,
+      end: Number
+    }
   ],
   hashtags: [String],
   score: Number
