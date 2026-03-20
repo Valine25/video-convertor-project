@@ -15,10 +15,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Upload API
+// Routes
 router.post("/upload", upload.single("video"), videoController.uploadVideo);
-
-// 🔥 GET API (VERY IMPORTANT FOR DEMO)
 router.get("/:id", videoController.getVideoById);
 
 module.exports = router;

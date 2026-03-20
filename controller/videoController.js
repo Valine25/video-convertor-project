@@ -1,5 +1,5 @@
 const Video = require("../models/video");
-const { exec } = require("child_process");
+const { exec, spawn } = require("child_process");
 
 // -------------------------
 // Upload Controller
@@ -12,7 +12,6 @@ exports.uploadVideo = async (req, res) => {
 
     console.log("Video uploaded:", req.file.filename);
 
-    // Save video in DB
     const newVideo = new Video({
       filename: req.file.filename,
       originalName: req.file.originalname,
@@ -37,8 +36,7 @@ exports.uploadVideo = async (req, res) => {
 
         console.log("Preprocessing output:", stdout);
 
-        // Keep logs, but extract transcript safely
-        let transcript = stdout;
+        const transcript = stdout;
 
         await Video.findByIdAndUpdate(savedVideo._id, {
           transcript: transcript,
@@ -73,10 +71,52 @@ exports.uploadVideo = async (req, res) => {
 
             await Video.findByIdAndUpdate(savedVideo._id, {
               highlights: result.highlights,
-              status: "completed"
+              status: "generating_clips"
             });
 
             console.log("Highlights saved");
+
+            // -------------------------
+            // STEP 3: Clip Generation (NO FILE)
+            // -------------------------
+            const pythonProcess = spawn("python", [
+              "ai-engine/clip_generation.py",
+              `uploads/${req.file.filename}`
+            ]);
+
+            console.log("Generating clips...");
+
+            // send highlights via stdin
+            pythonProcess.stdin.write(JSON.stringify(result.highlights));
+            pythonProcess.stdin.end();
+
+            let output = "";
+
+            pythonProcess.stdout.on("data", (data) => {
+              output += data.toString();
+            });
+
+            pythonProcess.stderr.on("data", (data) => {
+              console.error("Python stderr:", data.toString());
+            });
+
+            pythonProcess.on("close", async () => {
+              let clipResult;
+
+              try {
+                clipResult = JSON.parse(output);
+              } catch (e) {
+                console.error("Invalid JSON from clip generator");
+                return;
+              }
+
+              await Video.findByIdAndUpdate(savedVideo._id, {
+                clips: clipResult.clips,
+                status: "completed"
+              });
+
+              console.log("Clips generated:", clipResult.clips);
+            });
           }
         );
       }
@@ -94,7 +134,7 @@ exports.uploadVideo = async (req, res) => {
 };
 
 // -------------------------
-// GET Video by ID (FOR DEMO)
+// GET API
 // -------------------------
 exports.getVideoById = async (req, res) => {
   try {
@@ -107,7 +147,6 @@ exports.getVideoById = async (req, res) => {
     res.json(video);
 
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error fetching video" });
   }
 };

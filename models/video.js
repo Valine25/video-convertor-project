@@ -14,6 +14,8 @@ const videoSchema = new mongoose.Schema({
       end: Number
     }
   ],
+  
+  clips: [String],
   hashtags: [String],
   score: Number
 }, { timestamps: true });

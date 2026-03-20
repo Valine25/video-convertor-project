@@ -1,0 +1,6 @@
+{
+  "ignore": [
+    "ai-engine/*.json",
+    "ai-engine/clips/*"
+  ]
+}
