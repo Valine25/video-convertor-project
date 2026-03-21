@@ -58,7 +58,7 @@ exports.uploadVideo = async (req, res) => {
               console.error("Highlight error:", error);
               return;
             }
-
+            console.error("Highlight stderr:", stderr);
             console.log("Highlight output:", stdout);
 
             let result;
