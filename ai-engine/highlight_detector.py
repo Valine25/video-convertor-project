@@ -12,10 +12,9 @@ from groq import Groq
 video_path = sys.argv[1]
 client = Groq(api_key=os.environ.get("GROQ_KEY"))
 
-TRAILERS_TO_GENERATE = 3       # how many trailers we want
-MOMENTS_PER_TRAILER = 4        # moments per trailer (each 8-12 sec = ~40sec total)
-MOMENT_DURATION = 10           # seconds per moment
-TOTAL_MOMENTS_NEEDED = TRAILERS_TO_GENERATE * MOMENTS_PER_TRAILER  # 12 total
+MOMENTS_COUNT = 8          # 8 moments in final trailer
+MOMENT_DURATION = 7.5      # 8 x 7.5 = 60 seconds total
+TOTAL_CANDIDATES = 12      # find 12 candidates, pick best 8
 
 
 # -------------------------
@@ -38,7 +37,7 @@ def load_segments():
     if not os.path.exists(path):
         print("[Warning] segments.json not found", file=sys.stderr)
         return []
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -108,7 +107,6 @@ def score_segments(segments, energy_map, speech_rates):
     for seg in segments:
         start = int(seg["start"])
 
-        # Average audio energy over segment
         seg_energies = [
             energy_map[t]
             for t in range(start, min(int(seg["end"]) + 1, start + 15))
@@ -116,7 +114,6 @@ def score_segments(segments, energy_map, speech_rates):
         ]
         audio_score = sum(seg_energies) / len(seg_energies) if seg_energies else 0.3
         speech_score = speech_rates.get(seg["start"], 0.3)
-
         ml_score = round((audio_score * 0.6) + (speech_score * 0.4), 3)
 
         scored.append({
@@ -133,10 +130,6 @@ def score_segments(segments, energy_map, speech_rates):
 # STEP 6: Select Diverse Candidates
 # -------------------------
 def select_candidates(scored_segments, duration, needed, min_gap=15):
-    """
-    Pick top ML-scored segments spread across the video.
-    Need enough for multiple trailers.
-    """
     candidates = []
     used_times = []
 
@@ -144,14 +137,12 @@ def select_candidates(scored_segments, duration, needed, min_gap=15):
         too_close = any(abs(seg["start"] - t) < min_gap for t in used_times)
         if too_close:
             continue
-
         candidates.append(seg)
         used_times.append(seg["start"])
-
         if len(candidates) >= needed:
             break
 
-    # If not enough candidates, lower the gap requirement
+    # If not enough, lower gap requirement
     if len(candidates) < needed:
         for seg in scored_segments:
             if seg in candidates:
@@ -163,7 +154,7 @@ def select_candidates(scored_segments, duration, needed, min_gap=15):
             if len(candidates) >= needed:
                 break
 
-    print(f"[ML] Selected {len(candidates)} candidates for {TRAILERS_TO_GENERATE} trailers", file=sys.stderr)
+    print(f"[ML] Selected {len(candidates)} candidates", file=sys.stderr)
     for c in candidates:
         print(f"  {c['start']:.1f}s | ml_score={c['ml_score']} | \"{c['text'][:50]}\"", file=sys.stderr)
 
@@ -174,16 +165,11 @@ def select_candidates(scored_segments, duration, needed, min_gap=15):
 # STEP 7: Groq Emotion Detection
 # -------------------------
 def detect_emotions(candidates, duration):
-    """
-    Send ML candidates to Groq.
-    Get emotion + role labels for each.
-    We need enough labeled moments to build multiple trailers.
-    """
     print(f"[Groq] Detecting emotions on {len(candidates)} candidates...", file=sys.stderr)
 
     formatted = ""
     for i, c in enumerate(candidates):
-        formatted += f"[{i}] {c['start']:.1f}s-{c['end']:.1f}s (ml_score={c['ml_score']}): \"{c['text']}\"\n"
+        formatted += f"[{i}] {c['start']:.1f}s (ml_score={c['ml_score']}): \"{c['text']}\"\n"
 
     prompt = f"""You are an expert trailer editor analyzing a video.
 
@@ -191,25 +177,25 @@ Video duration: {duration} seconds
 High-energy moments detected by audio/speech analysis:
 {formatted}
 
-Label EACH moment with:
+Label EACH moment with emotion and role only.
+DO NOT change the timestamps.
+
 1. emotion: happy, excitement, suspense, angry, or sad
 2. role: hook, tension, climax, or resolution
 3. score: 0-10 virality score
-4. A good start/end time that captures 8-12 seconds of the best part
 
-IMPORTANT RULES:
+RULES:
 - Label ALL {len(candidates)} moments
-- Each moment should be 8-12 seconds long
-- Use exact timestamps close to the originals
-- Distribute roles so we have variety: multiple hooks, tensions, climaxes
+- Keep original timestamps exactly as given
+- Distribute roles: hooks, tensions, climaxes, resolutions
 - Return ONLY valid JSON, no explanation, no markdown
 
 Format:
 {{
   "moments": [
     {{
-      "start": <number>,
-      "end": <number>,
+      "start": <original start>,
+      "end": <original end>,
       "text": "<the line>",
       "emotion": "<happy|excitement|suspense|angry|sad>",
       "role": "<hook|tension|climax|resolution>",
@@ -236,7 +222,18 @@ Format:
         result = json.loads(raw)
         moments = result.get("moments", [])
 
-        print(f"[Groq] Got {len(moments)} labeled moments", file=sys.stderr)
+        # CRITICAL: Always use ML timestamps — ignore Groq timestamps
+        # Force each moment to exactly MOMENT_DURATION seconds
+        half = MOMENT_DURATION / 2
+        for i, m in enumerate(moments):
+            if i < len(candidates):
+                center = candidates[i]["start"]  # ML timestamp is the center
+            else:
+                center = float(m["start"])
+            m["start"] = round(max(0, center - 5), 2)
+            m["end"] = round(min(duration, center + 3), 2)
+
+        print(f"[Groq] Got {len(moments)} labeled moments:", file=sys.stderr)
         for m in moments:
             print(f"  [{m['role'].upper()}] {m['start']}s-{m['end']}s | {m['emotion']} | score={m['score']}", file=sys.stderr)
 
@@ -244,11 +241,11 @@ Format:
 
     except Exception as e:
         print(f"[Groq] Failed: {e}", file=sys.stderr)
-        # Fallback: return candidates as basic moments
+        half = MOMENT_DURATION / 2
         return [
             {
-                "start": c["start"],
-                "end": min(c["start"] + 10, duration),
+                "start": round(max(0, c["start"] - half), 2),
+                "end": round(min(duration, c["start"] + half), 2),
                 "text": c["text"],
                 "emotion": "excitement",
                 "role": ["hook", "tension", "climax", "resolution"][i % 4],
@@ -259,42 +256,30 @@ Format:
 
 
 # -------------------------
-# STEP 8: Group into Trailer Arcs
+# STEP 8: Build Single Trailer Arc
 # -------------------------
-def group_into_trailers(moments, duration, num_trailers=TRAILERS_TO_GENERATE):
-    """
-    Group moments into multiple trailer arcs.
-    Each trailer gets: 1 hook + 2 tensions + 1 climax/resolution
-    Trailers use DIFFERENT moments — no reuse.
-    """
-    # Sort by score descending
+def build_trailer_arc(moments, duration):
     sorted_moments = sorted(moments, key=lambda x: x.get("score", 0), reverse=True)
 
-    # Separate by role
     hooks = [m for m in sorted_moments if m["role"] == "hook"]
     tensions = [m for m in sorted_moments if m["role"] == "tension"]
     climaxes = [m for m in sorted_moments if m["role"] in ["climax", "resolution"]]
-
-    # If not enough of a role, use any moment
     all_moments = sorted_moments.copy()
-
-    trailers = []
 
     used = set()
 
     def get_unused(pool, count):
         result = []
         for m in pool:
-            key = f"{m['start']}-{m['end']}"
+            key = f"{m['start']}"
             if key not in used:
                 result.append(m)
                 used.add(key)
                 if len(result) >= count:
                     break
-        # If not enough in pool, fill from all unused
         if len(result) < count:
             for m in all_moments:
-                key = f"{m['start']}-{m['end']}"
+                key = f"{m['start']}"
                 if key not in used:
                     result.append(m)
                     used.add(key)
@@ -302,32 +287,22 @@ def group_into_trailers(moments, duration, num_trailers=TRAILERS_TO_GENERATE):
                         break
         return result
 
-    for t in range(num_trailers):
-        # Each trailer: 1 hook + 2 tensions + 1 climax
-        trailer_moments = []
+    # 2 hooks + 4 tensions + 2 climaxes = 8 moments x 7.5s = 60s
+    hook_picks = get_unused(hooks, 2)
+    tension_picks = get_unused(tensions, 4)
+    climax_picks = get_unused(climaxes, 2)
 
-        hook_picks = get_unused(hooks, 1)
-        tension_picks = get_unused(tensions, 2)
-        climax_picks = get_unused(climaxes, 1)
+    trailer_moments = hook_picks + tension_picks + climax_picks
 
-        trailer_moments = hook_picks + tension_picks + climax_picks
+    # Sort chronologically for natural flow
+    trailer_moments = sorted(trailer_moments, key=lambda x: x["start"])
 
-        if not trailer_moments:
-            print(f"[Arc] No moments left for trailer {t+1}, skipping", file=sys.stderr)
-            continue
+    total = sum(m["end"] - m["start"] for m in trailer_moments)
+    print(f"[Arc] Trailer: {len(trailer_moments)} moments, ~{total:.1f}s", file=sys.stderr)
+    for m in trailer_moments:
+        print(f"  [{m['role'].upper()}] {m['start']}s-{m['end']}s | {m['emotion']}", file=sys.stderr)
 
-        # Sort chronologically for natural flow within trailer
-        trailer_moments = sorted(trailer_moments, key=lambda x: x["start"])
-
-        # Calculate total duration
-        total = sum(m["end"] - m["start"] for m in trailer_moments)
-        print(f"[Arc] Trailer {t+1}: {len(trailer_moments)} moments, ~{total:.1f}s", file=sys.stderr)
-        for m in trailer_moments:
-            print(f"  [{m['role'].upper()}] {m['start']}s-{m['end']}s | {m['emotion']}", file=sys.stderr)
-
-        trailers.append(trailer_moments)
-
-    return trailers
+    return [trailer_moments]
 
 
 # -------------------------
@@ -345,30 +320,21 @@ def run():
         print(json.dumps({"highlights": [], "trailers": [], "duration": duration}))
         return
 
-    # ML signals
     energy_map = get_audio_energy(video_path)
     speech_rates = get_speech_rate(segments)
-
-    # Score all segments
     scored = score_segments(segments, energy_map, speech_rates)
-
-    # Select diverse candidates
-    candidates = select_candidates(scored, duration, TOTAL_MOMENTS_NEEDED)
+    candidates = select_candidates(scored, duration, TOTAL_CANDIDATES)
 
     if not candidates:
         print("[Error] No candidates found!", file=sys.stderr)
         print(json.dumps({"highlights": [], "trailers": [], "duration": duration}))
         return
 
-    # Groq emotion detection
     moments = detect_emotions(candidates, duration)
+    trailers = build_trailer_arc(moments, duration)
 
-    # Group into trailer arcs
-    trailers = group_into_trailers(moments, duration)
+    print(f"\n[Final] 1 trailer planned", file=sys.stderr)
 
-    print(f"\n[Final] {len(trailers)} trailers planned", file=sys.stderr)
-
-    # Output format — flat highlights list with trailer_index
     all_highlights = []
     for t_idx, trailer_moments in enumerate(trailers):
         for m in trailer_moments:

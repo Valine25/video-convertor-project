@@ -6,6 +6,7 @@ import sys
 import shutil
 import json
 
+os.environ["PATH"] += os.pathsep + r"C:\\users\\intel\Downloads\\ffmpeg-8.0.1-essentials_build\\ffmpeg-8.0.1-essentials_build\\bin"
 video_path = sys.argv[1]
 
 # Clean frames
@@ -66,7 +67,7 @@ transcript = result["text"]
 os.makedirs("ai-engine", exist_ok=True)
 
 # Save plain transcript
-with open("ai-engine/transcript.txt", "w") as f:
+with open("ai-engine/transcript.txt", "w", encoding="utf-8") as f:
     f.write(transcript)
 
 segments = []
@@ -84,11 +85,11 @@ for seg in result["segments"]:
             "end": round(w["end"], 3)
         })
 
-with open("ai-engine/segments.json", "w") as f:
-    json.dump(segments, f, indent=2)
+with open("ai-engine/segments.json", "w", encoding="utf-8") as f:
+    json.dump(segments, f, indent=2, ensure_ascii=False)
 
-with open("ai-engine/words.json", "w") as f:
-    json.dump(words, f, indent=2)
+with open("ai-engine/words.json", "w", encoding="utf-8") as f:
+    json.dump(words, f, indent=2, ensure_ascii=False)
 
 print("Transcript generated")
-print(transcript)
+print(transcript[:500].encode('utf-8', errors='ignore').decode('ascii', errors='ignore'))

@@ -2,38 +2,51 @@ import json
 import sys
 import os
 import subprocess
+import shutil
 
 video_path = sys.argv[1]
 
-# Read highlights from stdin
+# -------------------------
+# READ + PARSE INPUT
+# -------------------------
 data = json.loads(sys.stdin.read())
 
-# Support both formats
-if isinstance(data, list):
-    # Old format — treat all as one trailer
-    trailers = [data]
-else:
-    trailers = data.get("trailers", [])
-    if not trailers and data.get("highlights"):
-        # Group by trailer_index
-        highlights = data["highlights"]
-        trailer_map = {}
-        for h in highlights:
-            idx = h.get("trailer_index", 0)
-            if idx not in trailer_map:
-                trailer_map[idx] = []
-            trailer_map[idx].append(h)
-        trailers = [trailer_map[i] for i in sorted(trailer_map.keys())]
+# Get mode — trailer or minivlog
+mode = data.get("mode", "trailer") if isinstance(data, dict) else "trailer"
 
-output_dir = "ai-engine/clips"
-os.makedirs(output_dir, exist_ok=True)
+if isinstance(data, list):
+    highlights = data
+else:
+    highlights = data.get("highlights", [])
+
+# Group highlights by trailer_index
+trailer_map = {}
+for h in highlights:
+    idx = h.get("trailer_index", 0)
+    if idx not in trailer_map:
+        trailer_map[idx] = []
+    trailer_map[idx].append(h)
+
+trailers = [trailer_map[i] for i in sorted(trailer_map.keys())]
+trailers = trailers[:1]
 
 # -------------------------
 # CONFIG
 # -------------------------
+output_dir = "ai-engine/clips"
+os.makedirs(output_dir, exist_ok=True)
+
 WORDS_PATH = "ai-engine/words.json"
-FONT_SIZE = 48
-OUTLINE_WIDTH = 3
+
+# Mode-based config
+if mode == "minivlog":
+    FONT_SIZE = 44
+    OUTLINE_WIDTH = 3
+    MODE_LABEL = "minivlog"
+else:
+    FONT_SIZE = 48
+    OUTLINE_WIDTH = 3
+    MODE_LABEL = "trailer"
 
 
 # -------------------------
@@ -43,7 +56,7 @@ def load_words():
     if not os.path.exists(WORDS_PATH):
         print("[Subtitle] No words.json found", file=sys.stderr)
         return []
-    with open(WORDS_PATH, "r") as f:
+    with open(WORDS_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -92,8 +105,6 @@ def extract_moment(video_path, start, end, output_path):
 # -------------------------
 def stitch_clips(clip_paths, output_path):
     if len(clip_paths) == 1:
-        # Just copy single clip
-        import shutil
         shutil.copy(clip_paths[0], output_path)
         return True
 
@@ -123,7 +134,7 @@ def stitch_clips(clip_paths, output_path):
 
 
 # -------------------------
-# GENERATE ASS SUBTITLES
+# SUBTITLE HELPERS
 # -------------------------
 def seconds_to_ass(s):
     h = int(s // 3600)
@@ -133,32 +144,10 @@ def seconds_to_ass(s):
     return f"{h}:{m:02d}:{sec:02d}.{cs:02d}"
 
 
-def generate_subtitles(words, clip_start, clip_end, ass_path):
-    """Generate word-by-word highlighted subtitles for a clip"""
-
-    # Get words for this time range
-    clip_words = [
-        w for w in words
-        if w["start"] >= clip_start - 0.2 and w["end"] <= clip_end + 0.2
-    ]
-
-    if not clip_words:
-        print(f"[Sub] No words found for {clip_start}-{clip_end}", file=sys.stderr)
-        return False
-
-    # Shift to relative timestamps
-    shifted = [
-        {
-            "word": w["word"],
-            "start": max(0, round(w["start"] - clip_start, 3)),
-            "end": max(0, round(w["end"] - clip_start, 3))
-        }
-        for w in clip_words
-    ]
-
-    # Group into lines of 5 words
+def build_ass_content(combined_words, font_size, outline_width):
+    """Build ASS subtitle content from word list"""
     MAX_PER_LINE = 5
-    lines = [shifted[i:i+MAX_PER_LINE] for i in range(0, len(shifted), MAX_PER_LINE)]
+    lines = [combined_words[i:i+MAX_PER_LINE] for i in range(0, len(combined_words), MAX_PER_LINE)]
 
     ass = f"""[Script Info]
 ScriptType: v4.00+
@@ -168,19 +157,17 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,{FONT_SIZE},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,{OUTLINE_WIDTH},0,2,80,80,150,1
+Style: Default,Arial,{font_size},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,{outline_width},0,2,80,80,150,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
-
     events = []
     for line_words in lines:
         for i, current in enumerate(line_words):
             parts = []
             for j, w in enumerate(line_words):
                 if j == i:
-                    # Highlighted word — yellow
                     parts.append(f"{{\\c&H00FFFF&}}{w['word']}{{\\c&HFFFFFF&}}")
                 else:
                     parts.append(w["word"])
@@ -190,30 +177,30 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             )
 
     ass += "\n".join(events)
-
-    with open(ass_path, "w", encoding="utf-8") as f:
-        f.write(ass)
-
-    return True
+    return ass
 
 
 # -------------------------
-# BURN SUBTITLES
+# BURN SUBTITLES — FIXED FOR WINDOWS
 # -------------------------
 def burn_subtitles(clip_path, ass_path, output_path):
+    """
+    Burn subtitles using subtitles filter instead of ass filter.
+    This avoids the 'original_size' error on Windows.
+    """
     abs_ass = os.path.abspath(ass_path)
 
-    # Windows path fix
-    if sys.platform == "win32":
-        abs_ass = abs_ass.replace("\\", "/")
-        drive = abs_ass[0]
-        abs_ass = drive + "\\:" + abs_ass[2:]
-        abs_ass = abs_ass.replace("\\:", "\\\\:")
+    # Windows path fix for ffmpeg
+    abs_ass = abs_ass.replace("\\", "/")
+    if len(abs_ass) > 1 and abs_ass[1] == ":":
+        # Convert C:/path to C\:/path for ffmpeg on Windows
+        abs_ass = abs_ass[0] + "\\:" + abs_ass[2:]
 
+    # Use subtitles filter instead of ass filter — avoids original_size issue
     command = [
         "ffmpeg", "-y",
         "-i", clip_path,
-        "-vf", f"ass='{abs_ass}'",
+        "-vf", f"subtitles={abs_ass}:force_style='FontName=Arial,FontSize={FONT_SIZE},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline={OUTLINE_WIDTH},Bold=1,Alignment=2,MarginV=150'",
         "-c:v", "libx264", "-preset", "fast",
         "-crf", "18",
         "-c:a", "copy",
@@ -221,16 +208,29 @@ def burn_subtitles(clip_path, ass_path, output_path):
     ]
     result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     if result.returncode != 0:
-        print(f"[Sub Burn] Failed: {result.stderr.decode()[-200:]}", file=sys.stderr)
-        return False
+        print(f"[Sub Burn] subtitles filter failed, trying ass filter...", file=sys.stderr)
+        # Fallback to ass filter
+        command2 = [
+            "ffmpeg", "-y",
+            "-i", clip_path,
+            "-vf", f"ass={abs_ass}",
+            "-c:v", "libx264", "-preset", "fast",
+            "-crf", "18",
+            "-c:a", "copy",
+            output_path
+        ]
+        result2 = subprocess.run(command2, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        if result2.returncode != 0:
+            print(f"[Sub Burn] Both filters failed: {result2.stderr.decode()[-200:]}", file=sys.stderr)
+            return False
     return True
 
 
 # -------------------------
-# BUILD ONE TRAILER
+# BUILD ONE OUTPUT VIDEO
 # -------------------------
-def build_trailer(trailer_moments, trailer_idx, words):
-    print(f"\n[Trailer {trailer_idx+1}] Building with {len(trailer_moments)} moments...", file=sys.stderr)
+def build_video(trailer_moments, trailer_idx, words):
+    print(f"\n[{MODE_LABEL.upper()}] Building with {len(trailer_moments)} moments...", file=sys.stderr)
 
     moment_clips = []
     temp_files = []
@@ -238,13 +238,12 @@ def build_trailer(trailer_moments, trailer_idx, words):
     for i, moment in enumerate(trailer_moments):
         start = float(moment.get("start", 0))
         end = float(moment.get("end", start + 10))
-        emotion = moment.get("emotion", "")
         role = moment.get("role", "")
+        emotion = moment.get("emotion", "")
 
-        print(f"  [{role.upper()}] {start}s-{end}s | {emotion}", file=sys.stderr)
+        print(f"  [{role.upper()}] {start}s-{end}s | {emotion} | {round(end-start,1)}s", file=sys.stderr)
 
         raw_path = f"{output_dir}/t{trailer_idx}_m{i}_raw.mp4"
-
         success = extract_moment(video_path, start, end, raw_path)
         if not success:
             continue
@@ -253,35 +252,26 @@ def build_trailer(trailer_moments, trailer_idx, words):
         moment_clips.append(raw_path)
 
     if not moment_clips:
-        print(f"[Trailer {trailer_idx+1}] No moments extracted!", file=sys.stderr)
+        print(f"[{MODE_LABEL.upper()}] No moments extracted!", file=sys.stderr)
         return None
 
-    # Stitch moments into one trailer
+    # Stitch all moments
     stitched_path = f"{output_dir}/t{trailer_idx}_stitched.mp4"
-    print(f"[Trailer {trailer_idx+1}] Stitching {len(moment_clips)} moments...", file=sys.stderr)
-
-    stitch_success = stitch_clips(moment_clips, stitched_path)
-    if not stitch_success:
-        print(f"[Trailer {trailer_idx+1}] Stitch failed!", file=sys.stderr)
+    print(f"[{MODE_LABEL.upper()}] Stitching {len(moment_clips)} moments...", file=sys.stderr)
+    if not stitch_clips(moment_clips, stitched_path):
         return None
-
     temp_files.append(stitched_path)
 
-    # Generate subtitles for the full stitched trailer
-    # Calculate the full time range covered
-    all_starts = [float(m["start"]) for m in trailer_moments]
-    all_ends = [float(m["end"]) for m in trailer_moments]
-    trailer_clip_start = min(all_starts)
-    trailer_clip_end = max(all_ends)
+    # video_name = os.path.splitext(os.path.basename(video_path))[0]
+    # final_path = f"{output_dir}/{MODE_LABEL}_{video_name}.mp4"
+    video_name = os.path.splitext(os.path.basename(video_path))[0]
+    final_path = f"{output_dir}/trailer_{video_name}_{trailer_idx+1}.mp4"
 
-    ass_path = f"{output_dir}/t{trailer_idx}.ass"
-    final_path = f"{output_dir}/trailer_{trailer_idx+1}.mp4"
-
+    # Generate + burn subtitles
     if words:
-        print(f"[Trailer {trailer_idx+1}] Generating subtitles...", file=sys.stderr)
+        print(f"[{MODE_LABEL.upper()}] Generating subtitles...", file=sys.stderr)
 
-        # Build combined word list with adjusted timestamps
-        # Since we stitched clips, we need to remap word timestamps
+        # Remap word timestamps to stitched timeline
         combined_words = []
         cumulative_time = 0.0
 
@@ -290,13 +280,11 @@ def build_trailer(trailer_moments, trailer_idx, words):
             m_end = float(moment["end"])
             m_duration = m_end - m_start
 
-            # Get words for this moment
             moment_words = [
                 w for w in words
                 if w["start"] >= m_start - 0.2 and w["end"] <= m_end + 0.2
             ]
 
-            # Remap to stitched timeline
             for w in moment_words:
                 combined_words.append({
                     "word": w["word"],
@@ -306,60 +294,28 @@ def build_trailer(trailer_moments, trailer_idx, words):
 
             cumulative_time += m_duration
 
-        # Generate ASS for stitched trailer
-        sub_ass_path = f"{output_dir}/t{trailer_idx}_sub.ass"
-
         if combined_words:
-            MAX_PER_LINE = 5
-            lines = [combined_words[i:i+MAX_PER_LINE] for i in range(0, len(combined_words), MAX_PER_LINE)]
+            sub_ass_path = f"{output_dir}/t{trailer_idx}_sub.ass"
+            ass_content = build_ass_content(combined_words, FONT_SIZE, OUTLINE_WIDTH)
 
-            ass = f"""[Script Info]
-ScriptType: v4.00+
-PlayResX: 1080
-PlayResY: 1920
-ScaledBorderAndShadow: yes
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,{FONT_SIZE},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,{OUTLINE_WIDTH},0,2,80,80,150,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
-            events = []
-            for line_words in lines:
-                for i, current in enumerate(line_words):
-                    parts = []
-                    for j, w in enumerate(line_words):
-                        if j == i:
-                            parts.append(f"{{\\c&H00FFFF&}}{w['word']}{{\\c&HFFFFFF&}}")
-                        else:
-                            parts.append(w["word"])
-                    line_text = " ".join(parts)
-                    events.append(
-                        f"Dialogue: 0,{seconds_to_ass(current['start'])},{seconds_to_ass(current['end'])},Default,,0,0,0,,{line_text}"
-                    )
-
-            ass += "\n".join(events)
             with open(sub_ass_path, "w", encoding="utf-8") as f:
-                f.write(ass)
+                f.write(ass_content)
 
             temp_files.append(sub_ass_path)
 
-            # Burn subtitles
             burn_success = burn_subtitles(stitched_path, sub_ass_path, final_path)
             if not burn_success:
-                print(f"[Trailer {trailer_idx+1}] Subtitle burn failed, using without subtitles", file=sys.stderr)
-                import shutil
+                print(f"[{MODE_LABEL.upper()}] Subtitle burn failed, saving without subtitles", file=sys.stderr)
                 shutil.copy(stitched_path, final_path)
+            else:
+                print(f"[{MODE_LABEL.upper()}] Subtitles burned successfully!", file=sys.stderr)
         else:
-            import shutil
+            print(f"[{MODE_LABEL.upper()}] No words found for subtitles", file=sys.stderr)
             shutil.copy(stitched_path, final_path)
     else:
-        import shutil
         shutil.copy(stitched_path, final_path)
 
-    # Cleanup temp files
+    # Cleanup
     for f in temp_files:
         if os.path.exists(f) and f != final_path:
             try:
@@ -368,7 +324,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 pass
 
     duration = get_duration(final_path)
-    print(f"[Trailer {trailer_idx+1}] Done! {round(duration, 1)}s → {final_path}", file=sys.stderr)
+    print(f"[{MODE_LABEL.upper()}] Done! {round(duration, 1)}s → {final_path}", file=sys.stderr)
     return final_path
 
 
@@ -376,33 +332,34 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 # MAIN
 # -------------------------
 def run():
-    print(f"[Generator] Building {len(trailers)} trailers...", file=sys.stderr)
+    print(f"[Generator] Mode: {MODE_LABEL} | {len(trailers)} group(s) from {len(highlights)} highlights", file=sys.stderr)
 
     if not trailers:
-        print("[Error] No trailers to generate!", file=sys.stderr)
+        print("[Error] No highlights found!", file=sys.stderr)
         print(json.dumps({"clips": [], "total": 0}))
         return
 
     words = load_words()
     print(f"[Generator] Loaded {len(words)} word timestamps", file=sys.stderr)
 
-    trailer_paths = []
+    output_paths = []
 
-    for i, trailer_moments in enumerate(trailers):
-        if not trailer_moments:
+    for i, moments in enumerate(trailers):
+        if not moments:
             continue
-        path = build_trailer(trailer_moments, i, words)
+        print(f"[Generator] Group {i+1} has {len(moments)} moments", file=sys.stderr)
+        path = build_video(moments, i, words)
         if path:
-            trailer_paths.append(path)
+            output_paths.append(path)
 
-    print(f"\n[Done] Generated {len(trailer_paths)} trailers:", file=sys.stderr)
-    for p in trailer_paths:
+    print(f"\n[Done] Generated {len(output_paths)} video(s):", file=sys.stderr)
+    for p in output_paths:
         d = get_duration(p)
         print(f"  → {p} ({round(d,1)}s)", file=sys.stderr)
 
     print(json.dumps({
-        "clips": trailer_paths,
-        "total": len(trailer_paths)
+        "clips": output_paths,
+        "total": len(output_paths)
     }))
 
 
