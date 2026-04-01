@@ -5,6 +5,7 @@ import cv2
 import wave
 import audioop
 from groq import Groq
+from networkx import center
 
 # -------------------------
 # CONFIG
@@ -227,12 +228,12 @@ Format:
         half = MOMENT_DURATION / 2
         for i, m in enumerate(moments):
             if i < len(candidates):
-                center = candidates[i]["start"]  # ML timestamp is the center
+                # center = candidates[i]["start"]  # ML timestamp is the center
+                center = (candidates[i]["start"] + candidates[i]["end"]) / 2
             else:
                 center = float(m["start"])
-            m["start"] = round(max(0, center - 5), 2)
-            m["end"] = round(min(duration, center + 3), 2)
-
+            m["start"] = round(max(0, center - 4), 2)
+            m["end"] = round(min(duration, center + 4), 2)
         print(f"[Groq] Got {len(moments)} labeled moments:", file=sys.stderr)
         for m in moments:
             print(f"  [{m['role'].upper()}] {m['start']}s-{m['end']}s | {m['emotion']} | score={m['score']}", file=sys.stderr)

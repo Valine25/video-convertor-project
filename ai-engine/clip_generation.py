@@ -4,6 +4,9 @@ import os
 import subprocess
 import shutil
 
+os.environ["PATH"] += os.pathsep + r"C:\\users\\intel\Downloads\\ffmpeg-8.0.1-essentials_build\\ffmpeg-8.0.1-essentials_build\\bin"
+os.environ["FFMPEG_BINARY"] = r"C:\\users\\intel\Downloads\\ffmpeg-8.0.1-essentials_build\\ffmpeg-8.0.1-essentials_build\\bin\\ffmpeg.exe"
+
 video_path = sys.argv[1]
 
 # -------------------------
