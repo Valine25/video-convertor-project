@@ -254,6 +254,7 @@ def build_video(trailer_moments, trailer_idx, words):
         temp_files.append(raw_path)
         moment_clips.append(raw_path)
 
+
     if not moment_clips:
         print(f"[{MODE_LABEL.upper()}] No moments extracted!", file=sys.stderr)
         return None
