@@ -32,31 +32,31 @@ print("Audio extracted")
 # -------------------------
 # 2. Extract Frames
 # -------------------------
-cap = cv2.VideoCapture(video_path)
+# cap = cv2.VideoCapture(video_path)
 
-frame_count = 0
-frame_rate = cap.get(cv2.CAP_PROP_FPS)
+# frame_count = 0
+# frame_rate = cap.get(cv2.CAP_PROP_FPS)
 
-while True:
-    ret, frame = cap.read()
+# while True:
+#     ret, frame = cap.read()
 
-    if not ret:
-        break
+#     if not ret:
+#         break
 
-    if frame_count % int(frame_rate * 2) == 0:
-        frame_name = f"ai-engine/frames/frame_{frame_count}.jpg"
-        cv2.imwrite(frame_name, frame)
+#     if frame_count % int(frame_rate * 2) == 0:
+#         frame_name = f"ai-engine/frames/frame_{frame_count}.jpg"
+#         cv2.imwrite(frame_name, frame)
 
-    frame_count += 1
+#     frame_count += 1
 
-cap.release()
+# cap.release()
 
-print("Frames extracted")
+# print("Frames extracted")
 
 # -------------------------
 # 3. Speech-to-Text
 # -------------------------
-model = whisper.load_model("base")
+model = whisper.load_model("tiny")
 result = model.transcribe(audio_path, word_timestamps=True)
 
 transcript = result["text"]
