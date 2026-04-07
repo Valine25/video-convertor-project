@@ -1,6 +1,7 @@
 import json
 import sys
 import os
+from turtle import st
 import cv2
 import wave
 import audioop
@@ -15,15 +16,37 @@ from transformers import pipeline
 video_path = sys.argv[1]
 
 # Load models ONCE
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
-sentiment_model = pipeline("sentiment-analysis", framework="pt")
+# embedder = SentenceTransformer('all-MiniLM-L6-v2')
+embedder = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
-# ✅ PRECOMPUTE ROLE EMBEDDINGS (VERY IMPORTANT)
-HOOK_EMB = embedder.encode("something shocking or surprising")
-CONTEXT_EMB = embedder.encode("explaining something")
-TENSION_EMB = embedder.encode("conflict suspense")
-RESOLUTION_EMB = embedder.encode("final conclusion lesson")
+sentiment_model = pipeline(
+    "sentiment-analysis",
+    model="distilbert-base-uncased-finetuned-sst-2-english"
+)
+#  PRECOMPUTE ROLE EMBEDDINGS (VERY IMPORTANT)
+HOOK_EMB = embedder.encode([
+    "something shocking or surprising",
+    "kuch shocking ya surprising",
+    "ಒಂದು ಆಶ್ಚರ್ಯಕರ ಅಥವಾ ಶಾಕಿಂಗ್ ವಿಷಯ"
+],convert_to_tensor=True)
 
+CONTEXT_EMB = embedder.encode([
+    "explaining something",
+    "kuch samjha raha hai",
+    "ಏನನ್ನಾದರೂ ವಿವರಿಸುತ್ತಿದೆ"
+],convert_to_tensor=True)
+
+TENSION_EMB = embedder.encode([
+    "conflict suspense tension",
+    "tension ya problem ho rahi hai",
+    "ತಣಿವು ಅಥವಾ ಸಮಸ್ಯೆ ಉಂಟಾಗಿದೆ"
+],convert_to_tensor=True)
+
+RESOLUTION_EMB = embedder.encode([
+    "final conclusion lesson",
+    "ant mein result ya solution",
+    "ಕೊನೆಗೆ ಪರಿಹಾರ ಅಥವಾ نتیجہ"
+],convert_to_tensor=True)
 # -------------------------
 # STEP 1: Video Info
 # -------------------------
@@ -100,26 +123,36 @@ def get_speech_rate(segments):
 # STEP 5: TEXT FILTER
 # -------------------------
 def is_good_text(text):
-    text = text.strip().lower()
-    if len(text) < 20:
-        return False
-    if len(text.split()) < 5:
-        return False
-    short_words = [w for w in text.split() if len(w) <= 2]
-    if len(short_words) > 3:
-        return False
-    return True
+    text = text.strip()
 
+    if len(text) < 15:
+        return False
+
+    words = text.split()
+
+    if len(words) < 4:
+        return False
+
+    # Allow non-English scripts
+    has_alpha = any(char.isalpha() for char in text)
+
+    return has_alpha
 # -------------------------
 # STEP 6: ROLE DETECTION (FAST)
 # -------------------------
 def detect_role_from_embedding(emb):
+
+    def max_sim(emb, ref_embs):
+        sims = util.cos_sim(emb, ref_embs)  # tensor
+        return float(sims.max().item())     # ✅ FIX
+
     scores = {
-        "hook": float(util.cos_sim(emb, HOOK_EMB)),
-        "context": float(util.cos_sim(emb, CONTEXT_EMB)),
-        "tension": float(util.cos_sim(emb, TENSION_EMB)),
-        "resolution": float(util.cos_sim(emb, RESOLUTION_EMB))
+        "hook": max_sim(emb, HOOK_EMB),
+        "context": max_sim(emb, CONTEXT_EMB),
+        "tension": max_sim(emb, TENSION_EMB),
+        "resolution": max_sim(emb, RESOLUTION_EMB)
     }
+
     return max(scores, key=scores.get)
 
 # -------------------------
@@ -133,7 +166,12 @@ def score_segments(segments, energy_map, speech_rates):
 
     texts = [seg["text"] for seg in filtered]
 
-    embeddings = embedder.encode(texts, batch_size=32, show_progress_bar=False)
+    embeddings = embedder.encode(
+    texts,
+    batch_size=32,
+    show_progress_bar=False,
+    convert_to_tensor=True   # ✅ IMPORTANT
+)
     sentiments = sentiment_model(texts, batch_size=32)
 
     scored = []
@@ -163,7 +201,7 @@ def score_segments(segments, energy_map, speech_rates):
 
         #  Better semantic score
         emb = embeddings[i]
-        semantic_score = min(1.0, np.mean(np.abs(emb)))
+        semantic_score = min(1.0, float(emb.abs().mean().item()))
 
         final_score = (
             0.4 * sentiment_score +
@@ -185,73 +223,161 @@ def score_segments(segments, energy_map, speech_rates):
 # STEP 8: BUILD STORY (FIXED)
 # -------------------------
 def build_story(scored, duration):
-    story = []
 
-    def pick_spread_clips(scored, num_clips=8, min_gap=35):
+    if not scored:
+        return []
+
+    # -------------------------
+    # 1. Divide into zones
+    # -------------------------
+    hook_zone = []
+    middle_zone = []
+    ending_zone = []
+
+    for clip in scored:
+        ratio = clip["start"] / duration if duration > 0 else 0
+
+        if ratio < 0.2:
+            hook_zone.append(clip)
+        elif ratio < 0.8:
+            middle_zone.append(clip)
+        else:
+            ending_zone.append(clip)
+
+    # Sort each zone
+    hook_zone = sorted(hook_zone, key=lambda x: x["ml_score"], reverse=True)
+    middle_zone = sorted(middle_zone, key=lambda x: x["ml_score"], reverse=True)
+    ending_zone = sorted(ending_zone, key=lambda x: x["ml_score"], reverse=True)
+
+    # -------------------------
+    # 2. Smart picker (less random)
+    # -------------------------
+    def pick_clips(zone, num, min_gap=25):
         selected = []
-        for clip in scored:
-            if len(selected) >= num_clips:
+
+        for clip in zone:
+            if len(selected) >= num:
                 break
+
             if all(abs(clip["start"] - s["start"]) > min_gap for s in selected):
                 selected.append(clip)
+
         return selected
 
-    top_clips = pick_spread_clips(scored)
-    # ✅ ensure ending clip from last part of video
-    end_candidates = [c for c in scored if c["start"] > duration * 0.8]
+    # -------------------------
+    # 3. Story Structure
+    # -------------------------
+    hook_clips = pick_clips(hook_zone, 2)
+    middle_clips = pick_clips(middle_zone, 5)
+    ending_clips = pick_clips(ending_zone, 2)
 
-    if end_candidates:
-        best_end = end_candidates[0]  # highest scored from last part
+    # fallback (important if zones empty)
+    if not hook_clips:
+        hook_clips = scored[:2]
 
-    # replace last clip if not already included
-    if best_end not in top_clips:
-        top_clips[-1] = best_end
+    if not ending_clips:
+        ending_clips = scored[-2:]
 
-    def clip(c):
+    story_clips = hook_clips + middle_clips + ending_clips
+
+    # -------------------------
+    # 4. Clip shaping (BETTER TIMING)
+    # -------------------------
+    def shape_clip(c):
         seg_start = c["start"]
         seg_end = c["end"]
 
-        #  better center (speech-aware)
-        center = seg_start + (seg_end - seg_start) * 0.6
+        center = seg_start + (seg_end - seg_start) * 0.65
 
-        TARGET_DUR = 7.5
+        TARGET_DUR = 8
         half = TARGET_DUR / 2
 
         start = center - half
         end = center + half
 
-        # use full segment if longer
+        # If original segment longer → keep it
         if (seg_end - seg_start) > TARGET_DUR:
             start = seg_start
             end = seg_end
 
+        # Clamp within video
         start = max(0, start)
         end = min(duration, end)
 
-        # small extension for ending clips
-        if c["start"] > duration * 0.8:
-            end = min(duration, end + 1.5)   # extend ending slightly
+        #  FIX: Limit max clip duration (AFTER defining start/end)
+        MAX_CLIP = 8
+        if (end - start) > MAX_CLIP:
+            end = start + MAX_CLIP
 
         return {
-            "start": round(start, 2),
-            "end": round(end, 2),
-            "text": c["text"],
-            "role": detect_role_from_embedding(c["embedding"]),
-            "score": c["ml_score"] * 10,
-            "trailer_index": 0
+        "start": round(start, 2),
+        "end": round(end, 2),
+        "text": c["text"],
+        "role": detect_role_from_embedding(c["embedding"]),
+        "score": c["ml_score"] * 10,
+        "trailer_index": 0
         }
+    
+    story = [shape_clip(c) for c in story_clips]
 
-    story = [clip(c) for c in top_clips]
-
-    #  remove overlaps
+    # -------------------------
+    # 5. Sort + Remove overlaps
+    # -------------------------
     story = sorted(story, key=lambda x: x["start"])
+
     final_story = []
     last_end = -1
 
-    for c in story:
-        if c["start"] >= last_end:
-            final_story.append(c)
-            last_end = c["end"]
+    for clip in story:
+        if clip["start"] >= last_end:
+            final_story.append(clip)
+            last_end = clip["end"]
+
+    # -------------------------
+    # 6. Improve continuity (reduce jumps)
+    # -------------------------
+    for i in range(1, len(final_story)):
+        gap = final_story[i]["start"] - final_story[i - 1]["end"]
+
+        if gap > 50:
+            final_story[i]["score"] *= 0.85  # penalize jumpy clips
+
+    # -------------------------
+    # 7. FIX ENDING (IMPORTANT)
+    # -------------------------
+    if final_story:
+        last_clip = final_story[-1]
+
+        # extend ending smoothly
+        extend_by = 2.5
+        last_clip["end"] = min(duration, last_clip["end"] + extend_by)
+    
+    def enforce_duration_limits(story, min_total=30, max_total=60):
+
+        def total_duration(st):
+            return sum(c["end"] - c["start"] for c in st)
+
+        # -------------------------
+        # TRIM if too long
+        # -------------------------
+        while total_duration(story) > max_total and len(story) > 1:
+            # remove lowest score clip
+            story = sorted(story, key=lambda x: x["score"])
+            story.pop(0)
+
+        # -------------------------
+        # EXTEND if too short
+        # -------------------------
+        if total_duration(story) < min_total:
+            extra_needed = min_total - total_duration(story)
+            per_clip_extra = extra_needed / len(story)
+
+            for clip in story:
+                clip["end"] += per_clip_extra
+
+        return story
+
+    final_story = enforce_duration_limits(final_story)
 
     return [final_story]
 
@@ -272,9 +398,59 @@ def run():
     scored = score_segments(segments, energy_map, speech_rates)
     trailers = build_story(scored, duration)
 
-    top_scores = [s["ml_score"] for s in scored[:5]] if scored else []
-    virality_score = round((sum(top_scores) / len(top_scores)) * 10, 1) if top_scores else 0.0
+    def compute_virality_score(story, scored):
 
+        if not story:
+            return 0.0
+
+        # -------------------------
+        # 1. Hook strength (VERY IMPORTANT)
+        # -------------------------
+        hook_score = 0
+        if story:
+            hook_score = story[0]["score"] / 5  # first clip impact
+
+        # -------------------------
+        # 2. Average clip quality
+        # -------------------------
+        avg_score = sum(c["score"] for c in story) / len(story) / 10
+
+        # -------------------------
+        # 3. Emotional variation (spikes)
+        # -------------------------
+        scores = [c["score"] for c in story]
+        variation = np.std(scores) / 10 if len(scores) > 1 else 0
+
+        # -------------------------
+        # 4. Ending strength
+        # -------------------------
+        end_score = story[-1]["score"] / 10 if story else 0
+
+        # -------------------------
+        # 5. Story flow (penalize gaps)
+        # -------------------------
+        flow_penalty = 0
+        for i in range(1, len(story)):
+            gap = story[i]["start"] - story[i-1]["end"]
+            if gap > 60:
+                flow_penalty += 0.05
+
+        flow_score = max(0, 1 - flow_penalty)
+
+        # -------------------------
+        # FINAL VIRALITY
+        # -------------------------
+        virality = (
+            0.30 * hook_score +
+            0.25 * avg_score +
+            0.15 * variation +
+            0.20 * end_score +
+            0.10 * flow_score
+        )
+
+        return round(min(10, virality * 10), 1)
+    story = trailers[0] if trailers else []
+    virality_score = compute_virality_score(story, scored)
     result = {
         "highlights": trailers[0] if trailers else [],
         "trailers": trailers,
@@ -284,6 +460,10 @@ def run():
     }
 
     print(json.dumps(result))
+    # 🔥 Print virality score clearly in terminal
+    print("\n==============================", file=sys.stderr)
+    print(f"VIRALITY SCORE: {virality_score} / 10", file=sys.stderr)
+    print("==============================\n", file=sys.stderr)
 
 if __name__ == "__main__":
     run()
