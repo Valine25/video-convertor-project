@@ -408,7 +408,7 @@ def run():
         # -------------------------
         hook_score = 0
         if story:
-            hook_score = story[0]["score"] / 5  # first clip impact
+            hook_score = story[0]["score"] / 10  # first clip impact
 
         # -------------------------
         # 2. Average clip quality
