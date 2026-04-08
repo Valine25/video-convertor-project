@@ -1,6 +1,23 @@
 {
+  "watch": [
+    "index.js",
+    "routes",
+    "controller",
+    "config",
+    "models"
+  ],
   "ignore": [
-    "ai-engine/*.json",
-    "ai-engine/clips/*"
-  ]
+    "ai-engine/*",
+    "uploads/*",
+    "models/**",
+    ".cache/**",
+    "**/.cache/**",
+    "**/huggingface/**",
+    "**/*.wav",
+    "**/*.mp4",
+    "**/*.jpg",
+    "**/*.png",
+    "**/*.json"
+  ],
+  "ext": "js"
 }

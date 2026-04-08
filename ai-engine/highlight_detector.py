@@ -1,3 +1,4 @@
+from email.mime import text
 import json
 import sys
 import os
@@ -9,15 +10,20 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
+from hashtags import generate_hashtags
+from thumbnail_generator import generate_thumbnail
+
 
 # -------------------------
 # CONFIG
 # -------------------------
 video_path = sys.argv[1]
 
+# os.environ["HF_HUB_TIMEOUT"] = "60"
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 # Load models ONCE
-# embedder = SentenceTransformer('all-MiniLM-L6-v2')
-embedder = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+embedder = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+# embedder = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",cache_folder="./models")
 
 sentiment_model = pipeline(
     "sentiment-analysis",
@@ -170,7 +176,7 @@ def score_segments(segments, energy_map, speech_rates):
     texts,
     batch_size=32,
     show_progress_bar=False,
-    convert_to_tensor=True   # ✅ IMPORTANT
+    convert_to_tensor=True   
 )
     sentiments = sentiment_model(texts, batch_size=32)
 
@@ -217,8 +223,11 @@ def score_segments(segments, energy_map, speech_rates):
             "ml_score": round(float(final_score), 3),
             "embedding": emb
         })
+    # for s in scored:
+    #     s["ml_score"] = round(s["ml_score"], 3)
 
-    return sorted(scored, key=lambda x: x["ml_score"], reverse=True)
+    return sorted(scored, key=lambda x: (x["ml_score"], -x["start"]), reverse=True)
+    # sorted(scored, key=lambda x: x["ml_score"], reverse=True)
 # -------------------------
 # STEP 8: BUILD STORY (FIXED)
 # -------------------------
@@ -373,11 +382,14 @@ def build_story(scored, duration):
             per_clip_extra = extra_needed / len(story)
 
             for clip in story:
-                clip["end"] += per_clip_extra
+                clip["end"] = min(duration, clip["end"] + per_clip_extra)
 
         return story
 
     final_story = enforce_duration_limits(final_story)
+
+    # 🔥 FINAL ORDER FIX (VERY IMPORTANT)
+    final_story = sorted(final_story, key=lambda x: x["start"])
 
     return [final_story]
 
@@ -419,7 +431,7 @@ def run():
         # 3. Emotional variation (spikes)
         # -------------------------
         scores = [c["score"] for c in story]
-        variation = np.std(scores) / 10 if len(scores) > 1 else 0
+        variation = min(1.0, np.std(scores) / 10) if len(scores) > 1 else 0
 
         # -------------------------
         # 4. Ending strength
@@ -449,8 +461,10 @@ def run():
         )
 
         return round(min(10, virality * 10), 1)
+    
     story = trailers[0] if trailers else []
     virality_score = compute_virality_score(story, scored)
+    hashtags = generate_hashtags(story)
     result = {
         "highlights": trailers[0] if trailers else [],
         "trailers": trailers,
@@ -460,10 +474,20 @@ def run():
     }
 
     print(json.dumps(result))
-    # 🔥 Print virality score clearly in terminal
+    #  Print virality score clearly in terminal
     print("\n==============================", file=sys.stderr)
     print(f"VIRALITY SCORE: {virality_score} / 10", file=sys.stderr)
     print("==============================\n", file=sys.stderr)
+
+    print("HASHTAGS:", file=sys.stderr)
+    print(" ".join(hashtags), file=sys.stderr)
+
+    frame_folder = "ai-engine/frames"
+    video_path = sys.argv[1]  # already used in your preprocess
+
+    thumbnail_path = generate_thumbnail(frame_folder, video_path)
+
+    print(f"Thumbnail: {thumbnail_path}", file=sys.stderr)
 
 if __name__ == "__main__":
     run()

@@ -1,2 +1,13 @@
 .env
 node_modules/
+
+models/
+.cache/
+ai-engine/audio/
+ai-engine/frames/
+ai-engine/clips/
+ai-engine/thumbnail/
+*.mp4
+*.wav
+*.jpg
+*.png
