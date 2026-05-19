@@ -490,5 +490,7 @@ def run():
 
     print(f"Thumbnail: {thumbnail_path}", file=sys.stderr)
 
+    
+
 if __name__ == "__main__":
     run()

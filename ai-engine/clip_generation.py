@@ -360,6 +360,12 @@ def run():
     for p in output_paths:
         d = get_duration(p)
         print(f"  → {p} ({round(d,1)}s)", file=sys.stderr)
+    # -------------------------
+    # PLATFORM ADAPTATION
+    # -------------------------
+    from platform_adapter import process_generated_clips
+
+    converted = process_generated_clips(output_paths)
 
     print(json.dumps({
         "clips": output_paths,
