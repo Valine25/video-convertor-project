@@ -397,6 +397,8 @@ def build_story(scored, duration):
 # MAIN
 # -------------------------
 def run():
+    # video_path = sys.argv[1]  # already used in your preprocess
+
     duration, fps = get_video_info(video_path)
     segments = load_segments()
 
@@ -483,8 +485,7 @@ def run():
     print(" ".join(hashtags), file=sys.stderr)
 
     frame_folder = "ai-engine/frames"
-    video_path = sys.argv[1]  # already used in your preprocess
-
+    
     thumbnail_path = generate_thumbnail(frame_folder, video_path)
 
     print(f"Thumbnail: {thumbnail_path}", file=sys.stderr)
