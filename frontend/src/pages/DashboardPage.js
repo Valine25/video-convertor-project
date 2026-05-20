@@ -236,7 +236,7 @@ function DashboardPage() {
               </p>
 
               <h1>
-               Welcome back, {currentUser?.name || "Creator"}  
+               Welcome back, {currentUser?.fullName || "Creator"}  
               </h1>
               
 
@@ -314,89 +314,6 @@ function DashboardPage() {
 
   </div>
 
-  {/* SETTINGS */}
-
-  <div className="mini-settings-grid">
-
-    <label className="auth-field">
-
-      <span>Reel Length</span>
-
-      <select
-        className="auth-input"
-        value={uploadSettings.clipLength}
-        onChange={(e) =>
-          setUploadSettings((prev) => ({
-            ...prev,
-            clipLength: Number(e.target.value),
-          }))
-        }
-      >
-        <option value={30}>30 seconds</option>
-        <option value={60}>60 seconds</option>
-      </select>
-
-    </label>
-
-    <label className="auth-field">
-
-      <span>Platform</span>
-
-      <select
-        className="auth-input"
-        value={uploadSettings.platform}
-        onChange={(e) =>
-          setUploadSettings((prev) => ({
-            ...prev,
-            platform: e.target.value,
-          }))
-        }
-      >
-        <option value="instagram">
-          Instagram Reels
-        </option>
-
-        <option value="youtube">
-          YouTube Shorts
-        </option>
-      </select>
-
-    </label>
-
-    <label className="auth-field">
-
-      <span>Language</span>
-
-      <select
-        className="auth-input"
-        value={uploadSettings.targetLanguage}
-        onChange={(e) =>
-          setUploadSettings((prev) => ({
-            ...prev,
-            targetLanguage: e.target.value,
-          }))
-        }
-      >
-        <option value="auto">
-          Auto Detect
-        </option>
-
-        <option value="english">
-          English
-        </option>
-
-        <option value="hindi">
-          Hindi
-        </option>
-
-        <option value="kannada">
-          Kannada
-        </option>
-      </select>
-
-    </label>
-
-  </div>
 
   {/* BUTTONS */}
 
@@ -412,97 +329,326 @@ function DashboardPage() {
         : "Generate Reel"}
     </button>
 
-    <button
-      className="btn btn-secondary"
-      onClick={loadVideos}
-    >
-      Refresh Status
-    </button>
+  </div>
 
+</section>
+
+{/* results */}
+
+<section className="results-wrapper">
+
+  {/* TOP RESULT GRID */}
+
+  <div className="results-grid">
+
+    {/* CAPTIONS */}
+
+    <div className="result-card glass-card">
+
+      <div className="result-top">
+
+        <h3>AI Captions</h3>
+
+        <button className="mini-btn">
+          Copy
+        </button>
+
+      </div>
+
+      {uploading ? (
+
+        <div className="loading-box">
+          Generating captions...
+        </div>
+
+      ) : (
+
+        <p>
+          "This is where your AI generated
+          captions will appear automatically
+          after processing."
+        </p>
+
+      )}
+
+    </div>
+
+    {/* VIRALITY */}
+
+    <div className="result-card glass-card">
+
+      <div className="result-top">
+        <h3>Virality Score</h3>
+      </div>
+
+      {uploading ? (
+
+        <div className="loading-box">
+          Analyzing virality...
+        </div>
+
+      ) : (
+
+        <div className="viral-score-box">
+
+          <div className="viral-score">
+            100%
+          </div>
+
+          <p>
+            High engagement potential detected
+          </p>
+
+        </div>
+
+      )}
+
+    </div>
+
+  </div>
+
+  {/* HASHTAGS */}
+
+  <div className="result-card glass-card hashtags-card">
+
+    <div className="result-top">
+
+      <h3>Hashtags</h3>
+
+      <button className="mini-btn">
+        Copy
+      </button>
+
+    </div>
+
+    {uploading ? (
+
+      <div className="loading-box">
+        Generating hashtags...
+      </div>
+
+    ) : (
+
+      <div className="hashtag-wrap">
+
+        <span className="hashtag-pill">
+          #Your
+        </span>
+
+        <span className="hashtag-pill">
+          #hashtags
+        </span>
+
+        <span className="hashtag-pill">
+          #will 
+        </span>
+
+        <span className="hashtag-pill">
+          #appear
+        </span>
+
+        <span className="hashtag-pill">
+          #here
+        </span>
+
+        <span className="hashtag-pill">
+          #ai
+        </span>
+
+      </div>
+
+    )}
+
+  </div>
+
+  {/* OUTPUT VIDEOS */}
+
+  <div className="outputs-grid">
+
+    {/* GENERATED REEL */}
+
+    <div className="output-card glass-card">
+
+      <div className="result-top">
+
+        <h3>Generated Reel</h3>
+
+        <button className="mini-btn">
+          Download
+        </button>
+
+      </div>
+<br/>
+      {videoPreview ? (
+
+        <video
+          controls
+          className="result-video"
+          src={videoPreview}
+        />
+
+      ) : (
+
+        <div className="loading-box">
+          Waiting for reel...
+        </div>
+
+      )}
+
+    </div>
+
+    {/* 9:16 REEL */}
+
+    <div className="output-card glass-card">
+
+      <div className="result-top">
+
+        <h3>9:16 Platform Reel</h3>
+
+        <button className="mini-btn">
+          Download
+        </button>
+
+      </div>
+<br/>
+      {videoPreview ? (
+
+        <video
+          controls
+          className="result-video vertical-video"
+          src={videoPreview}
+        />
+
+      ) : (
+
+
+        <div className="loading-box">
+          Creating vertical reel...
+        </div>
+
+      )}
+
+    </div>
+
+  </div>
+
+  {/* THUMBNAIL */}
+
+  <div className="output-card glass-card thumbnail-card">
+
+    <div className="result-top">
+
+      <h3>AI Thumbnail</h3>
+
+      <button className="mini-btn">
+        Download
+      </button>
+
+    </div>
+<br/>
+
+    <div className="thumbnail-placeholder">
+
+  Thumbnail preview will appear here
+  after AI generation.
+</div>
   </div>
 
 </section>
 
             {/* HISTORY */}
 
-            <section className="glass-card history-section">
 
-              <div className="section-head">
+<section className="glass-card history-section">
 
-                <h2>
-                  Recent Uploads
-                </h2>
+  <div className="section-head">
+    <h2>Recent Uploads</h2>
+  </div>
+{loading ? (
 
+  <div className="empty-history-box">
+    <div className="history-loader"></div>
+    <p>Loading videos...</p>
+  </div>
+
+) : videos.length === 0 ? (
+
+  <div className="empty-history-box">
+
+    <div className="empty-history-icon">
+      🎬
+    </div>
+
+    <h3>No videos yet</h3>
+
+    <p>
+      Upload your first long-form video and
+      your AI-generated reels will appear here.
+    </p>
+
+  </div>
+
+) : (
+
+    <div className="history-grid">
+
+      {videos.map((video) => (
+
+        <div
+          key={video.id}
+          className="history-card"
+        >
+
+          <div>
+
+            <h3>
+              {video.originalName}
+            </h3>
+
+            <p>
+              {statusLabels[video.status]}
+            </p>
+
+          </div>
+
+          <div className="history-actions">
+
+            {video.clips?.length ? (
+
+              <video
+                controls
+                className="history-video"
+                src={assetUrl(video.clips[0].url)}
+              />
+
+            ) : (
+
+              <div className="video-processing">
+                Processing...
               </div>
 
-              {loading ? (
-                <p>Loading videos...</p>
-              ) : videos.length === 0 ? (
-                <p>No uploads yet.</p>
-              ) : (
-                <div className="history-grid">
+            )}
 
-                  {videos.map((video) => (
+            <button
+              className="delete-btn"
+              onClick={() =>
+                handleDeleteVideo(video.id)
+              }
+            >
+              Delete
+            </button>
 
-                    <div
-                      key={video.id}
-                      className="history-card"
-                    >
+          </div>
 
-                      <div>
+        </div>
 
-                        <h3>
-                          {video.originalName}
-                        </h3>
+      ))}
 
-                        <p>
-                          {
-                            statusLabels[
-                              video.status
-                            ]
-                          }
-                        </p>
+    </div>
 
-                      </div>
+  )}
 
-                      <div className="history-actions">
-
-                        {video.clips?.length ? (
-                          <video
-                            controls
-                            className="history-video"
-                            src={assetUrl(
-                              video.clips[0].url
-                            )}
-                          />
-                        ) : (
-                          <div className="video-processing">
-                            Processing...
-                          </div>
-                        )}
-
-                        <button
-                          className="delete-btn"
-                          onClick={() =>
-                            handleDeleteVideo(
-                              video.id
-                            )
-                          }
-                        >
-                          Delete
-                        </button>
-
-                      </div>
-
-                    </div>
-
-                  ))}
-
-                </div>
-              )}
-
-            </section>
-
+</section>
           </main>
 
         </div>

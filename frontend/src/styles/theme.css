@@ -1006,3 +1006,515 @@ body {
 .logout-btn:hover {
   background: linear-gradient(135deg, #538d5b, #ffe2b0);
 }
+
+/* =========================
+   RESULTS SECTION
+========================= */
+
+.results-wrapper{
+  margin-top:50px;
+
+  display:flex;
+  flex-direction:column;
+
+  gap:32px;
+}
+
+/* =========================
+   RESULTS GRID
+========================= */
+
+.results-grid{
+  display:grid;
+
+  grid-template-columns:1.2fr 0.8fr;
+
+  gap:28px;
+}
+
+/* =========================
+   OUTPUT GRID
+========================= */
+
+.outputs-grid{
+  display:grid;
+
+  grid-template-columns:1fr 1fr;
+
+  gap:28px;
+}
+
+/* =========================
+   CARDS
+========================= */
+
+.result-card,
+.output-card{
+  padding:34px;
+
+  border-radius:30px;
+
+  background:rgba(255,255,255,0.03);
+
+  border:1px solid rgba(255,255,255,0.06);
+
+  backdrop-filter:blur(8px);
+
+  transition:0.3s ease;
+}
+
+.result-card:hover,
+.output-card:hover{
+  transform:translateY(-4px);
+
+  border-color:rgba(180,255,140,0.18);
+
+  background:rgba(255,255,255,0.045);
+}
+
+/* =========================
+   CARD TOP
+========================= */
+
+.result-top{
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  margin-bottom:24px;
+
+  gap:20px;
+}
+
+/* =========================
+   HEADINGS
+========================= */
+
+.result-card h3,
+.output-card h3{
+  font-size:1.8rem;
+
+  color:white;
+
+  margin-bottom:18px;
+}
+
+/* =========================
+   TEXT
+========================= */
+
+.result-card p,
+.output-card p{
+  color:rgba(255,255,255,0.72);
+
+  line-height:1.8;
+
+  font-size:1rem;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.mini-btn{
+  border:none;
+
+  background:#e9f2c7;
+
+  color:black;
+
+  padding:12px 24px;
+
+  border-radius:999px;
+
+  font-weight:700;
+
+  font-size:0.95rem;
+
+  cursor:pointer;
+
+  transition:0.3s ease;
+}
+
+.mini-btn:hover{
+  transform:translateY(-2px);
+
+  background:white;
+}
+
+/* =========================
+   VIRALITY SCORE
+========================= */
+
+.viral-score{
+  font-size:5rem;
+
+  font-weight:800;
+
+  color:#70ff8f;
+
+  line-height:1;
+
+  margin-bottom:18px;
+}
+
+/* =========================
+   HASHTAGS
+========================= */
+
+.hashtag-wrap{
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:14px;
+
+  margin-top:20px;
+}
+
+.hashtag-pill{
+  padding:12px 20px;
+
+  border-radius:999px;
+
+  background:rgba(255,255,255,0.06);
+
+  color:#d8ff7b;
+
+  font-weight:700;
+
+  font-size:0.95rem;
+
+  transition:0.3s ease;
+}
+
+.hashtag-pill:hover{
+  background:rgba(255,255,255,0.12);
+
+  transform:translateY(-2px);
+}
+
+/* =========================
+   VIDEO
+========================= */
+
+.result-video{
+  width:100%;
+
+  border-radius:24px;
+
+  margin-top:18px;
+
+  background:black;
+
+  max-height:420px;
+
+  object-fit:cover;
+
+  border:1px solid rgba(255,255,255,0.05);
+}
+
+/* 9:16 VIDEO */
+
+.vertical-video{
+  aspect-ratio:9/16;
+
+  max-height:520px;
+
+  object-fit:cover;
+}
+
+/* =========================
+   THUMBNAIL
+========================= */
+
+.thumbnail-placeholder{
+  width:100%;
+
+  height:280px;
+
+  margin-top:20px;
+
+  border-radius:24px;
+
+  background:rgba(255,255,255,0.03);
+
+  border:1px dashed rgba(255,255,255,0.1);
+
+  display:flex;
+
+  justify-content:center;
+
+  align-items:center;
+
+  text-align:center;
+
+  color:rgba(255,255,255,0.55);
+
+  font-size:1.05rem;
+
+  padding:20px;
+
+  line-height:1.7;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.loading-box,
+.loading-text{
+  color:#9cffac;
+
+  margin-top:12px;
+
+  font-weight:600;
+
+  animation:pulse 1.3s infinite;
+}
+
+@keyframes pulse{
+
+  0%{
+    opacity:0.4;
+  }
+
+  50%{
+    opacity:1;
+  }
+
+  100%{
+    opacity:0.4;
+  }
+
+}
+
+/* =========================
+   HISTORY
+========================= */
+
+.history-section{
+  margin-top:50px;
+}
+
+.history-grid{
+  margin-top:24px;
+
+  display:grid;
+
+  gap:24px;
+}
+
+.history-card{
+  padding:24px;
+
+  border-radius:24px;
+
+  background:rgba(255,255,255,0.03);
+
+  border:1px solid rgba(255,255,255,0.06);
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:24px;
+
+  align-items:center;
+}
+
+.history-card h3{
+  color:white;
+
+  margin-bottom:10px;
+}
+
+.history-card p{
+  color:rgba(255,255,255,0.65);
+}
+
+.history-actions{
+  display:flex;
+
+  align-items:center;
+
+  gap:18px;
+}
+
+.history-video{
+  width:220px;
+
+  border-radius:18px;
+
+  overflow:hidden;
+}
+
+.video-processing{
+  width:220px;
+
+  height:120px;
+
+  border-radius:18px;
+
+  background:rgba(255,255,255,0.04);
+
+  display:flex;
+
+  justify-content:center;
+
+  align-items:center;
+
+  color:rgba(255,255,255,0.5);
+}
+
+.delete-btn{
+  border:none;
+
+  background:#ff4d4d;
+
+  color:white;
+
+  padding:12px 20px;
+
+  border-radius:999px;
+
+  cursor:pointer;
+
+  font-weight:700;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:950px){
+
+  .results-grid,
+  .outputs-grid{
+    grid-template-columns:1fr;
+  }
+
+  .history-card{
+    flex-direction:column;
+
+    align-items:flex-start;
+  }
+
+  .history-actions{
+    width:100%;
+
+    flex-direction:column;
+
+    align-items:flex-start;
+  }
+
+  .history-video,
+  .video-processing{
+    width:100%;
+  }
+
+  .viral-score{
+    font-size:4rem;
+  }
+
+}
+
+@media(max-width:600px){
+
+  .result-card,
+  .output-card{
+    padding:24px;
+  }
+
+  .result-card h3,
+  .output-card h3{
+    font-size:1.5rem;
+  }
+
+  .thumbnail-placeholder{
+    height:220px;
+  }
+
+}
+
+/* EMPTY HISTORY */
+
+.empty-history-box{
+  width:100%;
+
+  min-height:260px;
+
+  border-radius:30px;
+
+  background:rgba(255,255,255,0.03);
+
+  border:1px solid rgba(255,255,255,0.06);
+
+  display:flex;
+
+  flex-direction:column;
+
+  justify-content:center;
+
+  align-items:center;
+
+  text-align:center;
+
+  padding:40px;
+
+  margin-top:24px;
+}
+
+.empty-history-icon{
+  font-size:4rem;
+
+  margin-bottom:18px;
+}
+
+.empty-history-box h3{
+  color:white;
+
+  font-size:2rem;
+
+  margin-bottom:14px;
+}
+
+.empty-history-box p{
+  color:rgba(255,255,255,0.65);
+
+  max-width:520px;
+
+  line-height:1.8;
+}
+
+/* LOADER */
+
+.history-loader{
+  width:54px;
+
+  height:54px;
+
+  border-radius:50%;
+
+  border:4px solid rgba(255,255,255,0.1);
+
+  border-top:4px solid #8cff8c;
+
+  animation:spin 1s linear infinite;
+
+  margin-bottom:20px;
+}
+
+@keyframes spin{
+
+  0%{
+    transform:rotate(0deg);
+  }
+
+  100%{
+    transform:rotate(360deg);
+  }
+
+}
