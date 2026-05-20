@@ -2,6 +2,7 @@ import "../styles/theme.css";
 import SceneBackground from "../components/SceneBackground";
 import PageTransition from "../components/PageTransition";
 import TopNav from "../components/TopNav";
+import BrandMark from "../components/BrandMark";
 import {
   CaptionIcon,
   FrameIcon,
@@ -39,22 +40,6 @@ const stats = [
 ];
 
 function HomePage() {
-
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-
-    if (file) {
-      console.log("Uploaded:", file.name);
-
-      const video = document.getElementById("preview-video");
-      const fileName = document.getElementById("uploaded-file-name");
-
-      fileName.innerText = file.name;
-
-      video.src = URL.createObjectURL(file);
-      video.load();
-    }
-  };
 
   return (
     <div className="site-shell">
@@ -113,47 +98,19 @@ function HomePage() {
 
   {/* RIGHT SIDE */}
   <div className="hero-right">
-
-    {/* Upload Box */}
-    <label className="upload-box">
-
-      <input
-        type="file"
-        accept="video/*"
-        hidden
-        onChange={handleUpload}
-      />
-
-      <h3>Drag & Drop Video Here</h3>
-
-      <p>Upload MP4 / MOV videos</p>
-
-      <div
-        className="uploaded-file"
-        id="uploaded-file-name"
-      >
-        No file selected
+    <div className="hero-logo-card glass-card">
+      <div className="logo-circle">
+        <div className="logo-rotator">
+          <BrandMark />
+        </div>
+        <div className="logo-ring ring-one" />
+        <div className="logo-ring ring-two" />
+        <div className="logo-ring ring-three" />
       </div>
-
-    </label>
-
-    {/* Preview */}
-    <div className="preview-section">
-
-      <h4>Preview</h4>
-
-      <div className="video-preview">
-
-        <video
-          id="preview-video"
-          controls
-        >
-        </video>
-
+      <div className="logo-copy">
+        
       </div>
-
     </div>
-
   </div>
 
 </section>

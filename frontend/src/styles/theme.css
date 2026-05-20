@@ -256,6 +256,111 @@ body {
   gap:26px;
 }
 
+.hero-logo-card{
+  padding:32px;
+  border-radius:30px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 28px 80px rgba(0,0,0,0.22);
+}
+
+.logo-circle{
+  position:relative;
+  width:280px;
+  height:280px;
+  margin:0 auto 28px;
+  border-radius:50%;
+  background:radial-gradient(circle at top left, rgba(255,255,255,0.25), rgba(255,255,255,0.04) 60%);
+  border:1px solid rgba(255,255,255,0.09);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.logo-rotator{
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  background:linear-gradient(135deg, rgba(215,246,219,0.95), rgba(255,226,176,0.95));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  animation: logoSpin 12s linear infinite;
+  box-shadow:0 20px 60px rgba(0,0,0,0.18);
+  color:#08120d;
+}
+
+.logo-rotator svg{
+  width:60px;
+  height:60px;
+}
+
+.logo-ring{
+  position:absolute;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.18);
+}
+
+.ring-one{
+  width:220px;
+  height:220px;
+  animation: ringRotate 18s linear infinite;
+}
+
+.ring-two{
+  width:240px;
+  height:240px;
+  animation: ringRotateReverse 22s linear infinite;
+}
+
+.ring-three{
+  width:260px;
+  height:260px;
+  animation: ringRotate 26s linear infinite;
+}
+
+.logo-copy{
+  text-align:center;
+}
+
+.logo-eyebrow{
+  margin:0 0 10px;
+  color:rgba(255,255,255,0.75);
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  font-size:0.85rem;
+}
+
+.logo-copy h2{
+  margin:0 0 16px;
+  color:white;
+  font-size:2rem;
+  line-height:1.15;
+}
+
+.logo-copy p{
+  margin:0;
+  color:rgba(255,255,255,0.78);
+  font-size:1rem;
+  line-height:1.8;
+}
+
+@keyframes logoSpin{
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ringRotate{
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ringRotateReverse{
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
 .upload-box{
   width:100%;
 
@@ -1614,4 +1719,65 @@ body {
 
 .output-card video {
   margin-top: 20px;
+}
+
+/* 3D Model */
+.hero-3d-section {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  min-height: 90vh;
+
+  gap: 60px;
+}
+
+.hero-left {
+
+  flex: 1;
+
+  height: 700px;
+}
+
+.hero-right {
+
+  flex: 1;
+}
+
+.hero-right h1 {
+
+  font-size: 5rem;
+
+  font-weight: 800;
+}
+
+.hero-right p {
+
+  font-size: 1.2rem;
+
+  opacity: 0.8;
+
+  margin-top: 20px;
+}
+
+.upload-btn {
+
+  margin-top: 30px;
+
+  display: inline-flex;
+
+  padding: 18px 32px;
+
+  border-radius: 999px;
+
+  background: #e7efc2;
+
+  color: black;
+
+  font-weight: 700;
+
+  cursor: pointer;
 }
