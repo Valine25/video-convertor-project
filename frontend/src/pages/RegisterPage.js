@@ -1,32 +1,42 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+
 import "../styles/theme.css";
+
 import SceneBackground from "../components/SceneBackground";
 import PageTransition from "../components/PageTransition";
 import BrandMark from "../components/BrandMark";
 import TopNav from "../components/TopNav";
+
 import { useAuth } from "../context/AuthContext";
 
 function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     setError("");
 
     if (form.password.length < 6) {
@@ -40,11 +50,13 @@ function RegisterPage() {
     }
 
     setSubmitting(true);
+
     const result = await register({
       name: form.name,
       email: form.email,
       password: form.password,
     });
+
     setSubmitting(false);
 
     if (!result.ok) {
@@ -58,136 +70,249 @@ function RegisterPage() {
   return (
     <div className="site-shell auth-shell">
       <SceneBackground />
+
       <PageTransition>
         <div className="page">
+
           <TopNav showHome />
-          <div className="auth-layout">
-          <motion.section
-            className="auth-promo glass-card"
-            initial={{ opacity: 0, x: -28 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-          >
-            <div className="brand">
-              <div className="brand-mark">
-                <BrandMark />
-              </div>
+
+          <div className="login-layout">
+
+            {/* LEFT SIDE */}
+
+            <motion.div
+              className="login-left"
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7 }}
+            >
+
+
+
               <div>
-                <p className="brand-title">CinePulse Studio</p>
-                <p className="brand-subtitle">Launch your personal short-form creation space</p>
-              </div>
-            </div>
 
-            <h1>Create your creator workspace.</h1>
-            <p>
-              Create an account to unlock your upload dashboard, processing history, and clip previews inside one connected workspace.
-            </p>
+                <div className="showcase-label">
+                  REGISTER
+                </div>
 
-            <div className="auth-promo-grid">
-              <div className="glass-card feature-card">
-                <div className="feature-icon">01</div>
-                <h3>Upload</h3>
-                <p>Bring long content into a flow that feels designed for short-form output.</p>
-              </div>
-              <div className="glass-card feature-card">
-                <div className="feature-icon">02</div>
-                <h3>Analyze</h3>
-                <p>Let transcript signals, energy, and timing identify the best moments.</p>
-              </div>
-              <div className="glass-card feature-card">
-                <div className="feature-icon">03</div>
-                <h3>Compose</h3>
-                <p>Turn selected scenes into one stronger reel with a clearer story arc.</p>
-              </div>
-              <div className="glass-card feature-card">
-                <div className="feature-icon">04</div>
-                <h3>Publish</h3>
-                <p>Preview final shorts and keep the dashboard ready for next uploads.</p>
-              </div>
-            </div>
-          </motion.section>
+                <h2>
+                  Create your creator workspace.
+                </h2>
 
-          <motion.section
-            className="auth-card glass-card"
-            initial={{ opacity: 0, x: 28 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut", delay: 0.08 }}
-          >
-            <p className="showcase-label">Register</p>
-            <h2>Open your account</h2>
-            <p>Create your sign in details to access your personal dashboard.</p>
+                <p className="hero-text">
+                  Create an account to unlock your upload dashboard,
+                  processing history, and clip previews inside one
+                  connected workspace.
+                </p>
 
-            <form className="auth-form" onSubmit={handleSubmit}>
-              <div className="auth-field">
-                <label htmlFor="name">Full name</label>
-                <input
-                  id="name"
-                  className="auth-input"
-                  type="text"
-                  name="name"
-                  placeholder="Your name"
-                  value={form.name}
-                  onChange={handleChange}
-                  required
-                />
               </div>
 
-              <div className="auth-field">
-                <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  className="auth-input"
-                  type="email"
-                  name="email"
-                  placeholder="creator@example.com"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                />
+              <div className="login-feature-grid">
+
+                <div className="login-feature-card">
+
+                  <div className="feature-number">
+                    01
+                  </div>
+
+                  <h3>Upload</h3>
+
+                  <p>
+                    Bring long content into a flow designed
+                    for short-form output.
+                  </p>
+
+                </div>
+
+                <div className="login-feature-card">
+
+                  <div className="feature-number">
+                    02
+                  </div>
+
+                  <h3>Analyze</h3>
+
+                  <p>
+                    Detect hooks, reactions, and moments
+                    with the highest engagement.
+                  </p>
+
+                </div>
+
+                <div className="login-feature-card">
+
+                  <div className="feature-number">
+                    03
+                  </div>
+
+                  <h3>Generate</h3>
+
+                  <p>
+                    Build caption-ready vertical shorts
+                    automatically.
+                  </p>
+
+                </div>
+
+                <div className="login-feature-card">
+
+                  <div className="feature-number">
+                    04
+                  </div>
+
+                  <h3>Export</h3>
+
+                  <p>
+                    Publish optimized reels for YouTube,
+                    Instagram, and TikTok.
+                  </p>
+
+                </div>
+
               </div>
 
-              <div className="auth-field">
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  className="auth-input"
-                  type="password"
-                  name="password"
-                  placeholder="At least 6 characters"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                />
+            </motion.div>
+
+
+            {/* RIGHT SIDE */}
+
+            <motion.div
+              className="login-right"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7 }}
+            >
+
+              <div className="showcase-label">
+                CREATE ACCOUNT
               </div>
 
-              <div className="auth-field">
-                <label htmlFor="confirmPassword">Confirm password</label>
-                <input
-                  id="confirmPassword"
-                  className="auth-input"
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Repeat your password"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  required
-                />
+              <h2>
+                Open your account
+              </h2>
+
+              <p className="hero-text">
+                Create your sign in details to access
+                your personal dashboard.
+              </p>
+
+              <form
+                className="login-form"
+                onSubmit={handleSubmit}
+              >
+
+                <div className="auth-field">
+
+                  <label htmlFor="name">
+                    Full name
+                  </label>
+
+                  <input
+                    id="name"
+                    className="auth-input"
+                    type="text"
+                    name="name"
+                    placeholder="Your name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                  />
+
+                </div>
+
+                <div className="auth-field">
+
+                  <label htmlFor="email">
+                    Email
+                  </label>
+
+                  <input
+                    id="email"
+                    className="auth-input"
+                    type="email"
+                    name="email"
+                    placeholder="creator@example.com"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                  />
+
+                </div>
+
+                <div className="auth-field">
+
+                  <label htmlFor="password">
+                    Password
+                  </label>
+
+                  <input
+                    id="password"
+                    className="auth-input"
+                    type="password"
+                    name="password"
+                    placeholder="At least 6 characters"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                  />
+
+                </div>
+
+                <div className="auth-field">
+
+                  <label htmlFor="confirmPassword">
+                    Confirm password
+                  </label>
+
+                  <input
+                    id="confirmPassword"
+                    className="auth-input"
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Repeat your password"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    required
+                  />
+
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-accent auth-submit"
+                >
+                  {submitting
+                    ? "Creating Account..."
+                    : "Create Account"}
+                </button>
+
+              </form>
+
+              {error ? (
+                <div className="error-banner">
+                  {error}
+                </div>
+              ) : null}
+
+              <div className="auth-footer">
+                Already have an account?{" "}
+
+                <Link
+                  className="auth-link"
+                  to="/login"
+                >
+                  Sign in here
+                </Link>
+
               </div>
 
-              <button type="submit" className="btn btn-primary auth-submit">
-                {submitting ? "Creating Account..." : "Create Account"}
-              </button>
-            </form>
+            </motion.div>
 
-            {error ? <div className="error-banner">{error}</div> : null}
-
-            <p className="auth-footer">
-              Already have an account? <Link className="auth-link" to="/login">Sign in here</Link>
-            </p>
-          </motion.section>
           </div>
+
         </div>
       </PageTransition>
+
     </div>
   );
 }
