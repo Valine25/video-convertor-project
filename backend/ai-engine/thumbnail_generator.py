@@ -81,8 +81,7 @@ def save_thumbnail(best_frame, video_path, output_folder="ai-engine/thumbnail"):
     output_path = os.path.join(output_folder, f"{filename}_thumbnail.jpg")
 
     shutil.copy(best_frame, output_path)
-    return output_path
-
+    return f"/thumbnail/{os.path.basename(output_path)}"
 
 # -------------------------
 # Main function

@@ -1518,3 +1518,100 @@ body {
   }
 
 }
+
+
+.success-box{
+  margin-top:20px;
+
+  padding:16px 22px;
+
+  border-radius:18px;
+
+  background:rgba(75, 255, 145, 0.12);
+
+  border:1px solid rgba(75, 255, 145, 0.28);
+
+  color:#9dffb0;
+
+  font-weight:600;
+
+  width:fit-content;
+
+  backdrop-filter:blur(10px);
+
+  animation:fadeIn 0.3s ease;
+}
+
+.error-box{
+  margin-top:20px;
+
+  padding:16px 22px;
+
+  border-radius:18px;
+
+  background:rgba(255, 80, 80, 0.12);
+
+  border:1px solid rgba(255, 80, 80, 0.28);
+
+  color:#ff9b9b;
+
+  font-weight:600;
+
+  width:fit-content;
+
+  backdrop-filter:blur(10px);
+
+  animation:fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn{
+
+  from{
+    opacity:0;
+    transform:translateY(-6px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+.inline-success{
+  margin-top:0;
+}
+
+.upload-actions{
+  display:flex;
+
+  align-items:center;
+
+  gap:18px;
+
+  flex-wrap:wrap;
+
+  margin-top:35px;
+}
+
+.vertical-video {
+    display: block;
+  margin: auto;
+  width: 100%;
+  max-width: 320px;
+
+  aspect-ratio: 9 / 16;
+
+  object-fit: cover;
+
+  border-radius: 24px;
+
+  background: black;
+
+}
+.output-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.output-card video {
+  margin-top: 20px;
+}

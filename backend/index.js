@@ -1,42 +1,75 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const dotenv = require("dotenv");
+const path = require("path");
+
+dotenv.config();
 
 const connectDB = require("./config/db");
-
-
-// ROUTES
-const videoRoutes = require("./routes/videoRoutes");
-const authRoutes = require("./routes/authRoutes");
-
 
 const app = express();
 
 
-// CONNECT DATABASE
-connectDB();
+// =========================
+// MIDDLEWARE
+// =========================
 
-
-// MIDDLEWARES
 app.use(cors());
+
 app.use(express.json());
 
 
+// =========================
+// SERVE UPLOADS FOLDER
+// =========================
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
+app.use("/clips", express.static("ai-engine/clips"));
+
+app.use("/platform", express.static("ai-engine/platform"));
+
+app.use("/thumbnail", express.static("ai-engine/thumbnail"));
+
+
+// =========================
+// DATABASE
+// =========================
+
+connectDB();
+
+
+// =========================
 // TEST ROUTE
+// =========================
+
 app.get("/", (req, res) => {
-  res.send("PulseForge Backend Running...");
+  res.send("MongoDB Backend Running...");
 });
 
 
-// API ROUTES
-app.use("/api/videos", videoRoutes);
+// =========================
+// ROUTES
+// =========================
+
+const authRoutes = require("./routes/authRoutes");
+const videoRoutes = require("./routes/videoRoutes");
 
 app.use("/api/auth", authRoutes);
 
+app.use("/api/videos", videoRoutes);
 
+
+// =========================
 // SERVER
-const PORT = process.env.PORT || 5000;
+// =========================
+
+const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(
+    `Server running on http://localhost:${PORT}`
+  );
 });

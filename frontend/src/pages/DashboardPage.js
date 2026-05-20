@@ -19,7 +19,7 @@ import {
 const statusLabels = {
   preprocessing: "Preprocessing",
   detecting_highlights: "Analyzing",
-  generating_clips: "Generating Reel",
+  generating_reels: "Generating Reel",
   completed: "Completed",
   failed: "Failed",
 };
@@ -41,11 +41,7 @@ function DashboardPage() {
 
   const [dragging, setDragging] = useState(false);
 
-  const [uploadSettings, setUploadSettings] = useState({
-    clipLength: 30,
-    platform: "instagram",
-    targetLanguage: "auto",
-  });
+ 
 
   const [loading, setLoading] = useState(true);
 
@@ -55,9 +51,48 @@ function DashboardPage() {
 
   const [success, setSuccess] = useState("");
 
+  const [captionsCopied, setCaptionsCopied] = useState(false);
+
+  const [hashtagsCopied, setHashtagsCopied] = useState(false);
+
+  const messageTimeoutRef = useRef(null);
+
+  const clearMessageTimeout = () => {
+    if (messageTimeoutRef.current) {
+      window.clearTimeout(messageTimeoutRef.current);
+      messageTimeoutRef.current = null;
+    }
+  };
+
+  const showSuccess = (message, duration = 3000) => {
+    clearMessageTimeout();
+    setError("");
+    setSuccess(message);
+    messageTimeoutRef.current = window.setTimeout(() => {
+      setSuccess("");
+      messageTimeoutRef.current = null;
+    }, duration);
+  };
+
+  const showError = (message, duration = 4000) => {
+    clearMessageTimeout();
+    setSuccess("");
+    setError(message);
+    messageTimeoutRef.current = window.setTimeout(() => {
+      setError("");
+      messageTimeoutRef.current = null;
+    }, duration);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearMessageTimeout();
+    };
+  }, []);
+
   const activeVideo = useMemo(
     () =>
-      videos.find((video) => video.id === selectedVideoId) ||
+      videos.find((video) => video._id === selectedVideoId) ||
       videos[0] ||
       null,
     [videos, selectedVideoId]
@@ -69,25 +104,24 @@ function DashboardPage() {
         [
           "preprocessing",
           "detecting_highlights",
-          "generating_clips",
+          "generating_reels",
         ].includes(video.status)
       ),
     [videos]
   );
 
   const loadVideos = useCallback(async () => {
-    if (!currentUser?.id) return;
+    if (!currentUser?._id) return;
 
     try {
-      const result = await listVideos(currentUser.id);
+      const result = await listVideos(currentUser._id);
 
-      setVideos(result.videos);
-
-      if (result.videos.length > 0) {
-        setSelectedVideoId(result.videos[0].id);
+      setVideos(result);
+      if (result.length > 0) {
+          setSelectedVideoId(result[0]._id);
       }
     } catch (err) {
-      setError(err.message);
+      showError(err.message || "Error loading videos.");
     } finally {
       setLoading(false);
     }
@@ -105,11 +139,11 @@ function DashboardPage() {
     pollingRef.current = window.setInterval(async () => {
       for (const item of activeStatuses) {
         try {
-          const result = await getVideoById(item.id);
+          const result = await getVideoById(item._id);
 
           setVideos((prev) =>
             prev.map((video) =>
-              video.id === item.id ? result.video : video
+              video._id === item._id ? result : video
             )
           );
         } catch (err) {
@@ -151,51 +185,121 @@ function DashboardPage() {
     event.preventDefault();
 
     if (!selectedFile) {
-      setError("Please choose a video file.");
+      showError("Please choose a video file.");
       return;
     }
 
     setUploading(true);
 
-    setError("");
-
-    setSuccess("");
+    clearMessageTimeout();
 
     try {
       const result = await uploadVideo({
         file: selectedFile,
-        userId: currentUser.id,
-        settings: uploadSettings,
+        userId: currentUser._id,
       });
 
-      setVideos((prev) => [result.video, ...prev]);
+      showSuccess("Upload started successfully.");
 
-      setSelectedVideoId(result.video.id);
-
-      setSuccess("Upload started successfully.");
-
-      setSelectedFile(null);
-
-      setVideoPreview("");
+      // RELOAD HISTORY
+      loadVideos();
     } catch (err) {
-      setError(err.message);
+      showError(err.message || "Upload failed.");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDeleteVideo = async (videoId) => {
-    try {
-      await deleteVideo(videoId, currentUser.id);
-
-      setVideos((prev) =>
-        prev.filter((video) => video.id !== videoId)
-      );
-    } catch (err) {
-      setError(err.message);
+const handleDownload = async (fileUrl, filename) => {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error("Download failed");
     }
-  };
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename || "download";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  } catch (err) {
+    showError("Failed to download file.");
+  }
+};
 
+const handleDeleteVideo = async (videoId) => {
+
+  const confirmDelete = window.confirm(
+    "Delete this video permanently?"
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+
+    await deleteVideo(
+      videoId,
+      currentUser._id
+    );
+
+    setVideos((prev) =>
+      prev.filter((video) => video._id !== videoId)
+    );
+
+    showSuccess("Video deleted!");
+  } catch (err) {
+    console.log(err);
+    showError(err.message || "Delete failed.");
+  }
+};
+
+const handleCopyCaptions = async () => {
+
+  if (!activeVideo?.captions) return;
+
+  try {
+
+    await navigator.clipboard.writeText(
+      activeVideo.captions
+    );
+
+    setCaptionsCopied(true);
+
+    setTimeout(() => {
+      setCaptionsCopied(false);
+    }, 2000);
+
+  } catch {
+    showError("Failed to copy captions.");
+  }
+};
+
+const handleCopyHashtags = async () => {
+
+  if (!activeVideo?.hashtags?.length)
+    return;
+
+  try {
+
+    const text =
+      activeVideo.hashtags.join(" ");
+
+    await navigator.clipboard.writeText(
+      text
+    );
+
+    setHashtagsCopied(true);
+
+    setTimeout(() => {
+      setHashtagsCopied(false);
+    }, 2000);
+
+  } catch {
+    showError("Failed to copy hashtags.");
+  }
+};
   return (
     <div className="site-shell dashboard-shell">
       <SceneBackground />
@@ -267,7 +371,7 @@ function DashboardPage() {
 
     <h2>Drag & Drop Video Here</h2>
 
-    <p>Upload MP4 / MOV videos</p>
+    <p>Upload MP4 videos</p>
 
     <label className="upload-hidden-btn">
 
@@ -295,22 +399,25 @@ function DashboardPage() {
   <div className="preview-section">
 
     <h2>Preview</h2>
+      <div className="preview-video-box">
 
-    <div className="preview-video-box">
+  {videoPreview ? (
 
-      {videoPreview ? (
-        <video
-          src={videoPreview}
-          controls
-          className="preview-video"
-        />
-      ) : (
-        <div className="preview-placeholder">
-          Video preview will appear here
-        </div>
-      )}
+    <video
+      src={videoPreview}
+      controls
+      className="preview-video"
+    />
 
+  )  : (
+
+    <div className="preview-placeholder">
+      Video preview will appear here
     </div>
+
+  )}
+
+</div>
 
   </div>
 
@@ -329,7 +436,21 @@ function DashboardPage() {
         : "Generate Reel"}
     </button>
 
+    {success && (
+    <div className="success-box inline-success">
+      {success}
+    </div>
+  )}
+
+  {error && (
+    <div className="error-box inline-success">
+      {error}
+    </div>
+  )}
+
+
   </div>
+  
 
 </section>
 
@@ -349,8 +470,8 @@ function DashboardPage() {
 
         <h3>AI Captions</h3>
 
-        <button className="mini-btn">
-          Copy
+        <button className="mini-btn" onClick={handleCopyCaptions}>
+          {captionsCopied ? "Copied!" : "Copy"}
         </button>
 
       </div>
@@ -363,11 +484,12 @@ function DashboardPage() {
 
       ) : (
 
-        <p>
-          "This is where your AI generated
-          captions will appear automatically
-          after processing."
-        </p>
+      <p>
+  {
+    activeVideo?.captions ||
+    "AI captions will appear here after processing."
+  }
+</p>
 
       )}
 
@@ -392,7 +514,7 @@ function DashboardPage() {
         <div className="viral-score-box">
 
           <div className="viral-score">
-            100%
+            {activeVideo?.viralityScore || 0}%
           </div>
 
           <p>
@@ -415,8 +537,8 @@ function DashboardPage() {
 
       <h3>Hashtags</h3>
 
-      <button className="mini-btn">
-        Copy
+      <button className="mini-btn" onClick={handleCopyHashtags}>
+        {hashtagsCopied ? "Copied!" : "Copy"}
       </button>
 
     </div>
@@ -428,34 +550,30 @@ function DashboardPage() {
       </div>
 
     ) : (
+<div className="hashtag-wrap">
 
-      <div className="hashtag-wrap">
+  {activeVideo?.hashtags?.length ? (
 
-        <span className="hashtag-pill">
-          #Your
-        </span>
+    activeVideo.hashtags.map((tag, index) => (
 
-        <span className="hashtag-pill">
-          #hashtags
-        </span>
+      <span
+        key={index}
+        className="hashtag-pill"
+      >
+        {tag}
+      </span>
 
-        <span className="hashtag-pill">
-          #will 
-        </span>
+    ))
 
-        <span className="hashtag-pill">
-          #appear
-        </span>
+  ) : (
 
-        <span className="hashtag-pill">
-          #here
-        </span>
+    <p>
+      Hashtags will appear here after processing.
+    </p>
 
-        <span className="hashtag-pill">
-          #ai
-        </span>
+  )}
 
-      </div>
+</div>
 
     )}
 
@@ -469,66 +587,93 @@ function DashboardPage() {
 
     <div className="output-card glass-card">
 
-      <div className="result-top">
+  <div className="result-top">
 
-        <h3>Generated Reel</h3>
+    <h3>Generated Reel</h3>
 
-        <button className="mini-btn">
-          Download
-        </button>
+    {activeVideo?.generatedReel && (
 
-      </div>
-<br/>
-      {videoPreview ? (
+      <button
+        className="mini-btn"
+        onClick={() =>
+          handleDownload(
+            assetUrl(activeVideo.generatedReel),
+            "generated-reel.mp4"
+          )
+        }
+      >
+        Download
+      </button>
 
-        <video
-          controls
-          className="result-video"
-          src={videoPreview}
-        />
+    )}
 
-      ) : (
+  </div>
 
-        <div className="loading-box">
-          Waiting for reel...
-        </div>
+  <br />
 
-      )}
+  {activeVideo?.generatedReel ? (
 
+    <video
+      controls
+      className="result-video"
+      src={assetUrl(activeVideo.generatedReel)}
+    />
+
+  ) : (
+
+    <div className="loading-box">
+      Waiting for reel...
     </div>
+
+  )}
+
+</div>
 
     {/* 9:16 REEL */}
 
-    <div className="output-card glass-card">
+      <div className="output-card glass-card">
 
-      <div className="result-top">
+  <div className="result-top">
 
-        <h3>9:16 Platform Reel</h3>
+    <h3>9:16 Platform Reel</h3>
 
-        <button className="mini-btn">
-          Download
-        </button>
+    {activeVideo?.platformReel && (
 
-      </div>
-<br/>
-      {videoPreview ? (
+      <button
+        className="mini-btn"
+        onClick={() =>
+          handleDownload(
+            assetUrl(activeVideo.platformReel),
+            "platform-reel.mp4"
+          )
+        }
+      >
+        Download
+      </button>
 
-        <video
-          controls
-          className="result-video vertical-video"
-          src={videoPreview}
-        />
+    )}
 
-      ) : (
+  </div>
 
+  <br />
 
-        <div className="loading-box">
-          Creating vertical reel...
-        </div>
+  {activeVideo?.platformReel ? (
 
-      )}
+    <video
+      controls
+      className="result-video vertical-video"
+      src={assetUrl(activeVideo.platformReel)}
+    />
 
+  ) : (
+
+    <div className="loading-box">
+      Creating vertical reel...
     </div>
+
+  )}
+
+</div>
 
   </div>
 
@@ -536,23 +681,50 @@ function DashboardPage() {
 
   <div className="output-card glass-card thumbnail-card">
 
-    <div className="result-top">
+  <div className="result-top">
 
-      <h3>AI Thumbnail</h3>
+    <h3>AI Thumbnail</h3>
 
-      <button className="mini-btn">
+    {activeVideo?.thumbnail && (
+
+      <button
+        className="mini-btn"
+        onClick={() =>
+          handleDownload(
+            assetUrl(activeVideo.thumbnail),
+            "thumbnail.jpg"
+          )
+        }
+      >
         Download
       </button>
 
-    </div>
-<br/>
+    )}
+
+  </div>
+
+  <br />
+
+  {activeVideo?.thumbnail ? (
+
+    <img
+      src={assetUrl(activeVideo.thumbnail)}
+      alt="AI Thumbnail"
+      className="thumbnail-image"
+    />
+
+  ) : (
 
     <div className="thumbnail-placeholder">
 
-  Thumbnail preview will appear here
-  after AI generation.
+      Thumbnail preview will appear here
+      after AI generation.
+
+    </div>
+
+  )}
+
 </div>
-  </div>
 
 </section>
 
@@ -595,7 +767,7 @@ function DashboardPage() {
       {videos.map((video) => (
 
         <div
-          key={video.id}
+          key={video._id}
           className="history-card"
         >
 
@@ -608,31 +780,35 @@ function DashboardPage() {
             <p>
               {statusLabels[video.status]}
             </p>
+            <p className="history-time">
+  {new Date(video.createdAt)
+    .toLocaleString()}
+</p>
 
           </div>
 
           <div className="history-actions">
 
-            {video.clips?.length ? (
+            {video.generatedReel ? (
 
-              <video
-                controls
-                className="history-video"
-                src={assetUrl(video.clips[0].url)}
-              />
+  <video
+    controls
+    className="history-video"
+    src={assetUrl(video.generatedReel)}
+  />
 
-            ) : (
+) : (
 
-              <div className="video-processing">
-                Processing...
-              </div>
+  <div className="video-processing">
+    Processing...
+  </div>
 
-            )}
+)}
 
             <button
               className="delete-btn"
               onClick={() =>
-                handleDeleteVideo(video.id)
+                handleDeleteVideo(video._id)
               }
             >
               Delete

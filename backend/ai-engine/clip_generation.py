@@ -348,13 +348,29 @@ def run():
 
     output_paths = []
 
+    real_clip_paths = []
+
     for i, moments in enumerate(trailers):
+
         if not moments:
             continue
-        print(f"[Generator] Group {i+1} has {len(moments)} moments", file=sys.stderr)
+
+        print(
+            f"[Generator] Group {i+1} has {len(moments)} moments",
+        file=sys.stderr
+        )
+
         path = build_video(moments, i, words)
+
         if path:
-            output_paths.append(path)
+
+            # Real filesystem path
+            real_clip_paths.append(path)
+
+            # Browser-accessible URL path
+            browser_path = f"/clips/{os.path.basename(path)}"
+
+            output_paths.append(browser_path)
 
     print(f"\n[Done] Generated {len(output_paths)} video(s):", file=sys.stderr)
     for p in output_paths:
@@ -363,12 +379,33 @@ def run():
     # -------------------------
     # PLATFORM ADAPTATION
     # -------------------------
+
     from platform_adapter import process_generated_clips
 
-    converted = process_generated_clips(output_paths)
+    converted = process_generated_clips(real_clip_paths)
+    platform_clips = []
+
+    for c in converted:
+
+        if isinstance(c, dict):
+
+            output_file = c.get("output")
+
+        else:
+
+            output_file = c
+
+        if output_file:
+
+            browser_platform_path = (
+                f"/platform/{os.path.basename(output_file)}"
+            )
+
+            platform_clips.append(browser_platform_path)
 
     print(json.dumps({
         "clips": output_paths,
+        "platformClips": platform_clips,
         "total": len(output_paths)
     }))
 
