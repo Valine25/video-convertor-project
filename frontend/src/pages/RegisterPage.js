@@ -6,26 +6,27 @@ import "../styles/theme.css";
 
 import SceneBackground from "../components/SceneBackground";
 import PageTransition from "../components/PageTransition";
-import BrandMark from "../components/BrandMark";
 import TopNav from "../components/TopNav";
 
-import { useAuth } from "../context/AuthContext";
-
 function RegisterPage() {
+
   const navigate = useNavigate();
-  const { register } = useAuth();
 
   const [form, setForm] = useState({
-    name: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
 
   const [error, setError] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
 
+
+  // HANDLE INPUT CHANGE
   const handleChange = (event) => {
+
     const { name, value } = event.target;
 
     setForm((prev) => ({
@@ -34,44 +35,91 @@ function RegisterPage() {
     }));
   };
 
+
+  // HANDLE REGISTER
   const handleSubmit = async (event) => {
+
     event.preventDefault();
 
     setError("");
 
+    // PASSWORD LENGTH
     if (form.password.length < 6) {
+
       setError("Password must be at least 6 characters.");
+
       return;
     }
 
+    // PASSWORD MATCH
     if (form.password !== form.confirmPassword) {
+
       setError("Passwords do not match.");
+
       return;
     }
 
-    setSubmitting(true);
+    try {
 
-    const result = await register({
-      name: form.name,
-      email: form.email,
-      password: form.password,
-    });
+      setSubmitting(true);
 
-    setSubmitting(false);
+      // API CALL
+      const response = await fetch(
+        "http://localhost:5001/api/auth/register",
+        {
+          method: "POST",
 
-    if (!result.ok) {
-      setError(result.message);
-      return;
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            fullName: form.fullName,
+            email: form.email,
+            password: form.password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      setSubmitting(false);
+
+      console.log(data);
+
+      // SUCCESS
+      if (response.ok) {
+
+        alert("Registration Successful");
+
+        navigate("/login");
+
+      } else {
+
+        setError(data.message || "Registration failed");
+
+      }
+
+    } catch (error) {
+
+      console.log(error);
+
+      setSubmitting(false);
+
+      setError("Server Error");
+
     }
-
-    navigate("/dashboard", { replace: true });
   };
 
+
   return (
+
     <div className="site-shell auth-shell">
+
       <SceneBackground />
 
       <PageTransition>
+
         <div className="page">
 
           <TopNav showHome />
@@ -86,8 +134,6 @@ function RegisterPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.7 }}
             >
-
-
 
               <div>
 
@@ -201,24 +247,29 @@ function RegisterPage() {
                 onSubmit={handleSubmit}
               >
 
+                {/* FULL NAME */}
+
                 <div className="auth-field">
 
-                  <label htmlFor="name">
-                    Full name
+                  <label htmlFor="fullName">
+                    Full Name
                   </label>
 
                   <input
-                    id="name"
+                    id="fullName"
                     className="auth-input"
                     type="text"
-                    name="name"
-                    placeholder="Your name"
-                    value={form.name}
+                    name="fullName"
+                    placeholder="Your Name"
+                    value={form.fullName}
                     onChange={handleChange}
                     required
                   />
 
                 </div>
+
+
+                {/* EMAIL */}
 
                 <div className="auth-field">
 
@@ -239,6 +290,9 @@ function RegisterPage() {
 
                 </div>
 
+
+                {/* PASSWORD */}
+
                 <div className="auth-field">
 
                   <label htmlFor="password">
@@ -258,10 +312,13 @@ function RegisterPage() {
 
                 </div>
 
+
+                {/* CONFIRM PASSWORD */}
+
                 <div className="auth-field">
 
                   <label htmlFor="confirmPassword">
-                    Confirm password
+                    Confirm Password
                   </label>
 
                   <input
@@ -277,24 +334,38 @@ function RegisterPage() {
 
                 </div>
 
+
+                {/* SUBMIT BUTTON */}
+
                 <button
                   type="submit"
                   className="btn btn-accent auth-submit"
                 >
+
                   {submitting
                     ? "Creating Account..."
                     : "Create Account"}
+
                 </button>
 
               </form>
 
+
+              {/* ERROR */}
+
               {error ? (
+
                 <div className="error-banner">
                   {error}
                 </div>
+
               ) : null}
 
+
+              {/* FOOTER */}
+
               <div className="auth-footer">
+
                 Already have an account?{" "}
 
                 <Link
@@ -311,6 +382,7 @@ function RegisterPage() {
           </div>
 
         </div>
+
       </PageTransition>
 
     </div>
