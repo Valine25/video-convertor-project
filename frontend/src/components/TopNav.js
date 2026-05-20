@@ -21,7 +21,7 @@ function TopNav({ showHome = false, showAuth = false, rightContent = null }) {
       <nav className="nav-actions compact">
         <div className="nav-left">
           {showHome ? (
-            <Link to="/" className="link-muted">
+            <Link to="/" className="btn-ghost">
               Home
             </Link>
           ) : null}
