@@ -1781,3 +1781,64 @@ body {
 
   cursor: pointer;
 }
+
+/* captions */
+.captions-list {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 16px;
+
+  margin-top: 20px;
+}
+
+.caption-pill {
+
+  padding: 18px 20px;
+
+  border-radius: 18px;
+
+  background:
+    rgba(255,255,255,0.05);
+
+  border:
+    1px solid rgba(255,255,255,0.05);
+
+  line-height: 1.7;
+
+  transition: 0.3s ease;
+}
+
+.caption-pill:hover {
+
+  transform: translateY(-2px);
+
+  background:
+    rgba(255,255,255,0.08);
+}
+.captions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.caption-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.caption-card p {
+  margin: 0;
+  line-height: 1.8;
+  font-size: 18px;
+  white-space: pre-line;
+}

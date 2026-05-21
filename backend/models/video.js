@@ -30,7 +30,10 @@ const videoSchema = new mongoose.Schema(
     thumbnail: String,
 
     // CAPTIONS
-    captions: String,
+    captions: {
+  type: [String],
+  default: [],
+},
 
     // HASHTAGS
     hashtags: [String],

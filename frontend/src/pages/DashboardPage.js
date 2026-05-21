@@ -462,38 +462,66 @@ const handleCopyHashtags = async () => {
 
   <div className="results-grid">
 
+
     {/* CAPTIONS */}
 
-    <div className="result-card glass-card">
+<div className="result-card glass-card">
 
-      <div className="result-top">
+  <div className="result-top">
 
-        <h3>AI Captions</h3>
+    <h3>AI Captions</h3>
 
-        <button className="mini-btn" onClick={handleCopyCaptions}>
-          {captionsCopied ? "Copied!" : "Copy"}
-        </button>
+  </div>
 
-      </div>
+  {uploading ? (
 
-      {uploading ? (
+    <div className="loading-box">
+      Generating captions...
+    </div>
 
-        <div className="loading-box">
-          Generating captions...
+  ) : activeVideo?.captions?.length ? (
+
+    <div className="captions-grid">
+
+      {activeVideo.captions.map((caption, index) => (
+
+        <div
+          key={index}
+          className="caption-card"
+        >
+
+          <p
+            style={{
+              whiteSpace: "pre-line",
+            }}
+          >
+            {caption}
+          </p>
+
+          <button
+            className="mini-btn"
+            onClick={() => {
+              navigator.clipboard.writeText(caption);
+            }}
+          >
+            Copy
+          </button>
+
         </div>
 
-      ) : (
-
-      <p>
-  {
-    activeVideo?.captions ||
-    "AI captions will appear here after processing."
-  }
-</p>
-
-      )}
+      ))}
 
     </div>
+
+  ) : (
+
+    <p>
+      AI captions will appear here after processing.
+    </p>
+
+  )}
+
+</div>
 
     {/* VIRALITY */}
 

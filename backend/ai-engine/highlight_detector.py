@@ -11,6 +11,8 @@ from transformers import pipeline
 
 from hashtags import generate_hashtags
 from thumbnail_generator import generate_thumbnail
+from caption_generation import generate_caption
+
 
 
 # -------------------------
@@ -580,6 +582,7 @@ def run():
     virality_score = compute_virality_score(story)
 
     hashtags = generate_hashtags(story)
+    caption = generate_caption(story)
 
     # -------------------------
     # THUMBNAIL GENERATION
@@ -589,7 +592,7 @@ def run():
     thumbnail_path = ""
 
     try:
-
+        
         thumbnail_path = generate_thumbnail(
             frame_folder,
             video_path
@@ -606,7 +609,10 @@ def run():
             f"Thumbnail Error: {e}",
             file=sys.stderr
         )
-
+    #----------------------------
+    # CAPTION GENERATION
+    #----------------------------
+    
     # -------------------------
     # FINAL RESULT
     # -------------------------
@@ -617,6 +623,8 @@ def run():
         "duration": duration,
 
         "hashtags": hashtags,
+
+        "captions": caption,
 
         "virality_score": virality_score*10,
 

@@ -117,6 +117,8 @@ exports.uploadVideo = async (req, res) => {
 
               highlights: result.highlights || [],
 
+              captions: result.captions || [],
+
               hashtags: result.hashtags || [],
 
               viralityScore:
@@ -198,7 +200,7 @@ exports.uploadVideo = async (req, res) => {
                 platformReel: platformClip,
 
                 captions:
-                  "AI generated captions will appear here.",
+                  result.captions || [],
 
                 hashtags:
                   result.hashtags || [],
