@@ -9,6 +9,17 @@ exports.registerUser = async (req, res) => {
 
     const { fullName, email, password } = req.body;
 
+    // PASSWORD VALIDATION
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, and one number",
+      });
+    }
+
     // check existing user
     const existingUser = await Creator.findOne({ email });
 

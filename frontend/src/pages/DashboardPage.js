@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/theme.css";
+import "../styles/Animation.css";
 
 import SceneBackground from "../components/SceneBackground";
 import PageTransition from "../components/PageTransition";
@@ -93,10 +94,21 @@ function DashboardPage() {
   const activeVideo = useMemo(
     () =>
       videos.find((video) => video._id === selectedVideoId) ||
-      videos[0] ||
       null,
     [videos, selectedVideoId]
   );
+
+  const activeVideoCaptions = useMemo(() => {
+    if (!activeVideo?.captions) return [];
+    const items = Array.isArray(activeVideo.captions)
+      ? activeVideo.captions
+      : [activeVideo.captions];
+    return items
+      .map((caption) =>
+        typeof caption === "string" ? caption.trim() : caption
+      )
+      .filter(Boolean);
+  }, [activeVideo?.captions]);
 
   const activeStatuses = useMemo(
     () =>
@@ -117,9 +129,9 @@ function DashboardPage() {
       const result = await listVideos(currentUser._id);
 
       setVideos(result);
-      if (result.length > 0) {
-          setSelectedVideoId(result[0]._id);
-      }
+      setSelectedVideoId((currentId) =>
+        currentId || result?.[0]?._id || ""
+      );
     } catch (err) {
       showError(err.message || "Error loading videos.");
     } finally {
@@ -155,11 +167,24 @@ function DashboardPage() {
     return () => window.clearInterval(pollingRef.current);
   }, [activeStatuses]);
 
-  const handleLogout = () => {
-    logout();
+const handleLogout = () => {
 
-    navigate("/", { replace: true });
-  };
+  setVideos([]);
+
+  setSelectedVideoId("");
+
+  setSelectedFile(null);
+
+  setVideoPreview("");
+
+  setError("");
+
+  setSuccess("");
+
+  logout();
+
+  navigate("/", { replace: true });
+};
 
   const handleVideoSelection = (file) => {
     if (!file) return;
@@ -199,6 +224,7 @@ function DashboardPage() {
         userId: currentUser._id,
       });
 
+      setSelectedVideoId(result.videoId);
       showSuccess("Upload started successfully.");
 
       // RELOAD HISTORY
@@ -257,13 +283,12 @@ const handleDeleteVideo = async (videoId) => {
 
 const handleCopyCaptions = async () => {
 
-  if (!activeVideo?.captions) return;
+  if (!activeVideoCaptions.length) return;
 
   try {
+    const text = activeVideoCaptions.join("\n\n");
 
-    await navigator.clipboard.writeText(
-      activeVideo.captions
-    );
+    await navigator.clipboard.writeText(text);
 
     setCaptionsCopied(true);
 
@@ -471,55 +496,53 @@ const handleCopyHashtags = async () => {
 
     <h3>AI Captions</h3>
 
+    <button className="mini-btn" onClick={handleCopyCaptions}>
+      {captionsCopied ? "Copied!" : "Copy"}
+    </button>
+
   </div>
 
-  {uploading ? (
+{uploading ? (
 
-    <div className="loading-box">
-      Generating captions...
-    </div>
+  <div className="loading-box">
+    Generating captions...
+  </div>
 
-  ) : activeVideo?.captions?.length ? (
+) : activeVideoCaptions.length ? (
 
-    <div className="captions-grid">
+  <div className="captions-grid">
 
-      {activeVideo.captions.map((caption, index) => (
+    {activeVideoCaptions.map((caption, index) => (
 
-        <div
-          key={index}
-          className="caption-card"
+      <div
+        key={index}
+        className="caption-card"
+      >
+
+        <p
+          style={{
+            whiteSpace: "pre-line",
+          }}
         >
+          {caption}
+        </p>
 
-          <p
-            style={{
-              whiteSpace: "pre-line",
-            }}
-          >
-            {caption}
-          </p>
+      
+        
 
-          <button
-            className="mini-btn"
-            onClick={() => {
-              navigator.clipboard.writeText(caption);
-            }}
-          >
-            Copy
-          </button>
+      </div>
+      
 
-        </div>
+    ))}
+  </div>
 
-      ))}
+) : (
 
-    </div>
+  <p>
+    AI captions will appear here after processing.
+  </p>
 
-  ) : (
-
-    <p>
-      AI captions will appear here after processing.
-    </p>
-
-  )}
+)}
 
 </div>
 
@@ -794,10 +817,15 @@ const handleCopyHashtags = async () => {
 
       {videos.map((video) => (
 
-        <div
-          key={video._id}
-          className="history-card"
-        >
+       <div
+  key={video._id}
+  className={`history-card ${
+    selectedVideoId === video._id
+      ? "active-history-card"
+      : ""
+  }`}
+  onClick={() => setSelectedVideoId(video._id)}
+>
 
           <div>
 

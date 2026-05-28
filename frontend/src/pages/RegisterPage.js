@@ -21,6 +21,7 @@ function RegisterPage() {
 
   const [error, setError] = useState("");
 
+  
   const [submitting, setSubmitting] = useState(false);
 
 
@@ -304,12 +305,12 @@ function RegisterPage() {
                     className="auth-input"
                     type="password"
                     name="password"
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     value={form.password}
                     onChange={handleChange}
                     required
                   />
-
+                  
                 </div>
 
 

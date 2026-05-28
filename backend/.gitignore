@@ -1,11 +1,20 @@
 .env
 node_modules/
+package-lock.json
 
 .cache/
 ai-engine/audio/
 ai-engine/frames/
 ai-engine/clips/
 ai-engine/thumbnail/
+ai-engine/platform/
+ai-engine/__pycache__/
+
+
+uploads/
+ai-engine/segments.json
+ai-engine/transcript.txt
+ai-engine/words.json
 *.mp4
 *.wav
 *.jpg

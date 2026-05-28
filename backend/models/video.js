@@ -30,10 +30,7 @@ const videoSchema = new mongoose.Schema(
     thumbnail: String,
 
     // CAPTIONS
-    captions: {
-  type: [String],
-  default: [],
-},
+    captions: [String],
 
     // HASHTAGS
     hashtags: [String],
@@ -49,3 +46,5 @@ const videoSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("Video", videoSchema);
+
+

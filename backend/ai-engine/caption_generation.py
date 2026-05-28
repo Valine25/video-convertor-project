@@ -9,53 +9,71 @@ api_key = os.getenv("GROQ_KEY")
 
 client = Groq(api_key=api_key)
 
+
 def generate_caption(story):
+
+    fallback = [
+        "This challenge got completely OUT OF CONTROL 😭🔥"
+    ]
+
     if not story:
-        return [
-            "This reel is too good.\nWatch till the end 👀"
-        ]
+        return fallback
 
     try:
+
+        # PICK BEST CLIP
         best_clip = max(
             story,
             key=lambda x: x.get("score", 0)
         )
 
+        # GET TRANSCRIPT
         full_text = best_clip.get("text", "")
 
+        # SMALLER CONTEXT = STRONGER HOOKS
+        short_text = full_text[:250]
+
         prompt = f"""
-You are an expert Instagram Reels caption writer.
+You write viral Instagram Reel captions.
 
-Generate ONLY 3 viral Instagram Reel captions.
+Write ONLY ONE caption.
 
-STYLE RULES:
+Style:
+- dramatic
+- chaotic
+- exaggerated
+- energetic
+- internet style
+- viral hook energy
 
-* Captions should feel like Instagram Reels/TikTok hooks
-* Conversational tone
-* Gen Z style
-* Emotional, catchy, relatable
-* Focus on ONE strong moment
-* No long explanations
-* No hashtags
-* No numbering
-* Make it feel human
-* Each caption should be ONE compact sentence
-* Maximum 8 to 14 words
-* give 2 sentences.
+Avoid:
+- emotional storytelling
+- motivational tone
+- professional language
+- corporate sounding captions
 
-GOOD EXAMPLES:
+Make it feel like:
+- crazy Reel hooks
+- viral TikTok captions
+- hyper internet energy
 
-Just had the best idea 💡 Gonna change everything.
+Examples:
 
-This fit is unreal 😭 Need this ASAP.
+Diet swap gone WILD 😭🔥
 
-Nah this transition is actually insane 🔥.
-\
+This got OUT OF CONTROL real fast 💀
+
+Nah this is actually INSANE 😳
+
+Biggest mistake of our lives 😭
+
+This challenge turned into COMPLETE CHAOS 💥
+
+You won't believe what happened next 😭
 
 Transcript:
-{full_text}
+{short_text}
 """
-
 
         response = client.chat.completions.create(
 
@@ -66,22 +84,36 @@ Transcript:
                     "role": "user",
                     "content": prompt
                 }
-            ]
+            ],
+
+            temperature=1.3,
+
+            top_p=0.95
         )
 
         output = response.choices[0].message.content.strip()
 
-        captions = [
-            c.strip()
-            for c in output.split("---")
-            if c.strip()
-        ]
+        print("CAPTION OUTPUT:", file=sys.stderr)
+        print(output, file=sys.stderr)
 
-        return captions[:3]
+        # CLEAN OUTPUT
+        caption = output.split("\n")[0].strip()
+
+        caption = caption.lstrip(
+            "-•1234567890. "
+        )
+
+        # FALLBACK IF EMPTY
+        if not caption:
+            return fallback
+
+        return [caption]
 
     except Exception as e:
-        print(f"Caption Error: {e}", file=sys.stderr)
-        return [
-            "This reel is insane.\nWait till the end 🔥"
-        ]
 
+        print(
+            f"Caption Error: {e}",
+            file=sys.stderr
+        )
+
+        return fallback

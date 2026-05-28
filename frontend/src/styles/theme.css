@@ -1842,3 +1842,9 @@ body {
   font-size: 18px;
   white-space: pre-line;
 }
+
+
+.active-history-card {
+  border: 1px solid #c7ff6b;
+  transform: scale(1.02);
+}
