@@ -76,7 +76,7 @@ function HomePage() {
 
       <button
         className="btn-primary"
-        onClick={() => window.location.href = "/dashboard"}
+        onClick={() => window.location.href = "/register"}
       >
         Start Creating
       </button>

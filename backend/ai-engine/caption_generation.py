@@ -13,7 +13,7 @@ client = Groq(api_key=api_key)
 def generate_caption(story):
 
     fallback = [
-        "This challenge got completely OUT OF CONTROL 😭🔥"
+        "Core memory unlocked ❤️"
     ]
 
     if not story:
@@ -21,58 +21,90 @@ def generate_caption(story):
 
     try:
 
-        # PICK BEST CLIP
-        best_clip = max(
-            story,
-            key=lambda x: x.get("score", 0)
-        )
+        # USE ALL STORY TEXT INSTEAD OF ONE CLIP
+        valid_segments = []
 
-        # GET TRANSCRIPT
-        full_text = best_clip.get("text", "")
+        for clip in story:
 
-        # SMALLER CONTEXT = STRONGER HOOKS
-        short_text = full_text[:250]
+            text = clip.get("text", "").strip()
+
+            words = text.split()
+
+            if len(words) < 4:
+                continue
+
+            if any(char.isalpha() for char in text):
+                valid_segments.append(text)
+
+        full_text = " ".join(valid_segments)
 
         prompt = f"""
-You write viral Instagram Reel captions.
+You are an Instagram Reels caption writer.
 
-Write ONLY ONE caption.
+Your job is NOT to summarize the video.
 
-Style:
-- dramatic
-- chaotic
-- exaggerated
-- energetic
-- internet style
-- viral hook energy
+Your job is to find the most memorable moment,
+emotion, event or theme in the video and turn it
+into a caption someone would actually post.
 
-Avoid:
-- emotional storytelling
-- motivational tone
-- professional language
-- corporate sounding captions
+IMPORTANT:
 
-Make it feel like:
-- crazy Reel hooks
-- viral TikTok captions
-- hyper internet energy
+- If the video is a birthday vlog, write a birthday caption
+- If the video is travel, write a travel caption
+- If the video is food, write a food caption
+- If the video is friendship, write a friendship caption
+- If the video is family, write a family caption
+- If the video is a photoshoot for a birthday, treat it as a birthday vlog, not a photography tutorial
 
-Examples:
+RULES:
 
-Diet swap gone WILD 😭🔥
+- One caption only
+- Minimum 7 words
+- Human sounding
+- Instagram style
+- No hashtags
+- No quotation marks
+- No numbering
+- No generic captions
+- No describing camera work
+- No describing filming
+- Focus on what the creator is experiencing
 
-This got OUT OF CONTROL real fast 💀
+GOOD EXAMPLES:
 
-Nah this is actually INSANE 😳
+Birthday vlog:
+#birthdayvlog
+#birthdaycelebration
+#birthdaygirl
+#birthdaymemories
+#celebrationtime
+#specialday
+#fyp
+#viral
 
-Biggest mistake of our lives 😭
+Travel vlog:
+#travelvlog
+#wanderlust
+#traveldiaries
+#exploremore
+#adventuretime
+#travelgram
+#fyp
+#viral
 
-This challenge turned into COMPLETE CHAOS 💥
+Lifestyle vlog:
+#lifestylevlog
+#dayinmylife
+#dailyvlog
+#everydaymoments
+#lifestylecontent
+#vloglife
+#fyp
+#viral
 
-You won't believe what happened next 😭
 
 Transcript:
-{short_text}
+{full_text}
 """
 
         response = client.chat.completions.create(
@@ -86,9 +118,9 @@ Transcript:
                 }
             ],
 
-            temperature=1.3,
+            temperature=1.0,
 
-            top_p=0.95
+            top_p=0.9
         )
 
         output = response.choices[0].message.content.strip()
@@ -96,14 +128,12 @@ Transcript:
         print("CAPTION OUTPUT:", file=sys.stderr)
         print(output, file=sys.stderr)
 
-        # CLEAN OUTPUT
         caption = output.split("\n")[0].strip()
 
         caption = caption.lstrip(
             "-•1234567890. "
         )
 
-        # FALLBACK IF EMPTY
         if not caption:
             return fallback
 

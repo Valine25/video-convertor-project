@@ -6,7 +6,8 @@ import sys
 import shutil
 import json
 
-os.environ["PATH"] += os.pathsep + r"C:\\users\\intel\Downloads\\ffmpeg-8.0.1-essentials_build\\ffmpeg-8.0.1-essentials_build\\bin"
+os.environ["PATH"] += os.pathsep + r"C:\\users\\intel\\Downloads\\ffmpeg-8.0.1-essentials_build\\ffmpeg-8.0.1-essentials_build\\bin"
+
 video_path = sys.argv[1]
 
 # Clean frames
@@ -38,14 +39,20 @@ frame_count = 0
 frame_rate = cap.get(cv2.CAP_PROP_FPS)
 
 while True:
+
     ret, frame = cap.read()
 
     if not ret:
         break
 
     if frame_count % int(frame_rate * 2) == 0:
+
         frame_name = f"ai-engine/frames/frame_{frame_count}.jpg"
-        cv2.imwrite(frame_name, frame)
+
+        cv2.imwrite(
+            frame_name,
+            frame
+        )
 
     frame_count += 1
 
@@ -56,40 +63,135 @@ print("Frames extracted")
 # -------------------------
 # 3. Speech-to-Text
 # -------------------------
-model = whisper.load_model("tiny")
-result = model.transcribe(audio_path, word_timestamps=True)
+
+# FAST MODEL FIRST
+tiny_model = whisper.load_model("tiny")
+
+result = tiny_model.transcribe(
+    audio_path,
+    word_timestamps=True,
+    task="transcribe"
+)
+
+language = result.get(
+    "language",
+    "unknown"
+)
+
+print(
+    f"Detected language: {language}",
+    file=sys.stderr
+)
+
+# KANNADA -> USE BETTER MODEL
+if language == "kn":
+
+    print(
+        "Kannada detected. Switching to SMALL model...",
+        file=sys.stderr
+    )
+
+    small_model = whisper.load_model("small")
+
+    result = small_model.transcribe(
+        audio_path,
+        word_timestamps=True,
+        task="transcribe"
+    )
 
 transcript = result["text"]
 
 # -------------------------
 # 4. Save transcript + segments
 # -------------------------
-os.makedirs("ai-engine", exist_ok=True)
 
-# Save plain transcript
-with open("ai-engine/transcript.txt", "w", encoding="utf-8") as f:
+os.makedirs(
+    "ai-engine",
+    exist_ok=True
+)
+
+# Save transcript
+with open(
+    "ai-engine/transcript.txt",
+    "w",
+    encoding="utf-8"
+) as f:
+
     f.write(transcript)
 
 segments = []
 words = []
+
 for seg in result["segments"]:
+
     segments.append({
-        "start": round(seg["start"], 2),
-        "end": round(seg["end"], 2),
+
+        "start": round(
+            seg["start"],
+            2
+        ),
+
+        "end": round(
+            seg["end"],
+            2
+        ),
+
         "text": seg["text"].strip()
     })
+
     for w in seg.get("words", []):
+
         words.append({
+
             "word": w["word"].strip(),
-            "start": round(w["start"], 3),
-            "end": round(w["end"], 3)
+
+            "start": round(
+                w["start"],
+                3
+            ),
+
+            "end": round(
+                w["end"],
+                3
+            )
         })
 
-with open("ai-engine/segments.json", "w", encoding="utf-8") as f:
-    json.dump(segments, f, indent=2, ensure_ascii=False)
+with open(
+    "ai-engine/segments.json",
+    "w",
+    encoding="utf-8"
+) as f:
 
-with open("ai-engine/words.json", "w", encoding="utf-8") as f:
-    json.dump(words, f, indent=2, ensure_ascii=False)
+    json.dump(
+        segments,
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
+
+with open(
+    "ai-engine/words.json",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    json.dump(
+        words,
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
 
 print("Transcript generated")
-print(transcript[:500].encode('utf-8', errors='ignore').decode('ascii', errors='ignore'))
+
+print(
+    transcript[:500]
+    .encode(
+        "utf-8",
+        errors="ignore"
+    )
+    .decode(
+        "ascii",
+        errors="ignore"
+    )
+)

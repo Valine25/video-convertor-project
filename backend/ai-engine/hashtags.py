@@ -10,52 +10,147 @@ api_key = os.getenv("GROQ_KEY")
 
 groq_client = Groq(api_key=api_key)
 
+
 def generate_hashtags(story):
+
+    fallback = [
+        "#fyp",
+        "#viral",
+        "#reels"
+    ]
+
     if not story:
-        return ["#viral", "#trending", "#fyp"]
+        return fallback
 
-    # Use ALL moments text, not just first 5
-    full_text = " ".join([c["text"] for c in story if len(c["text"].strip()) > 5])
-    full_text = full_text[:1000]  # give more context
+    try:
 
-    prompt = f"""You are a social media expert.
+        # USE ALL STORY TEXT
+        valid_segments = []
 
-Based on this video transcript, generate 6-8 relevant hashtags.
+        for clip in story:
+
+            text = clip.get("text", "").strip()
+
+            words = text.split()
+
+            if len(words) < 4:
+                continue
+
+            if any(char.isalpha() for char in text):
+                valid_segments.append(text)
+
+            full_text = " ".join(valid_segments)
+            full_text = full_text[:2000]
+
+        prompt = f"""
+Generate EXACTLY 8 Instagram hashtags.
+
+IMPORTANT:
+
+Use actual keywords found in the transcript.
+
+Do NOT use generic hashtags such as:
+#lifestyle
+#vlog
+#contentcreator
+#vlogger
+#vloglife
+#lifestylevlog
+
+Focus on:
+
+- people
+- events
+- activities
+- locations
+- celebrations
+- food
+- travel
+- hobbies
+
+Use specific hashtags.
+
+BAD EXAMPLE:
+
+#lifestyle
+#vlog
+#vloglife
+
+GOOD EXAMPLE:
+
+Birthday vlog:
+#birthdaycelebration
+#birthdaygirl
+#birthdaymemories
+#specialday
+
+Travel vlog:
+#budapesttravel
+#europetrip
+#traveldiaries
+#wanderlust
+
+Food vlog:
+#chocolateraspberries
+#foodfinds
+#foodiefavorites
+#breakfastideas
+
+Output ONLY hashtags.
 
 Transcript:
 {full_text}
-
-STRICT RULES:
-- Output ONLY hashtags, nothing else
-- Each tag must start with #
-- Tags must be DIRECTLY related to the video content
-- No random or generic tags except #fyp and #viral
-- No punctuation between tags
-- Lowercase only
-
-Example output:
-#cooking #healthyfood #recipe #homecook #fyp #viral
 """
 
-    try:
         response = groq_client.chat.completions.create(
+
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}]
+
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+
+            temperature=0.8
         )
 
         output = response.choices[0].message.content.strip()
-        hashtags = [tag.lower() for tag in output.split() if tag.startswith("#")]
-        
-        # Make sure #fyp and #viral are always included
+
+        print("HASHTAG OUTPUT:", file=sys.stderr)
+        print(output, file=sys.stderr)
+
+        hashtags = []
+
+        for token in output.split():
+
+            token = token.strip()
+
+            if (
+                token.startswith("#")
+                and token.lower() not in hashtags
+            ):
+                hashtags.append(token.lower())
+
+        # ENSURE THESE EXIST
         if "#fyp" not in hashtags:
             hashtags.append("#fyp")
+
         if "#viral" not in hashtags:
             hashtags.append("#viral")
+
+        # MINIMUM FALLBACK
+        if len(hashtags) < 3:
+            return fallback
 
         return hashtags[:8]
 
     except Exception as e:
-        print("GROQ ERROR:", e, file=sys.stderr)
-        return ["#viral", "#trending", "#fyp"]
 
+        print(
+            f"HASHTAG ERROR: {e}",
+            file=sys.stderr
+        )
 
+        return fallback

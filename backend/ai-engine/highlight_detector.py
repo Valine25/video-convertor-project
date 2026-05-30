@@ -581,8 +581,8 @@ def run():
 
     virality_score = compute_virality_score(story)
 
-    hashtags = generate_hashtags(story)
-    caption = generate_caption(story)
+    hashtags = generate_hashtags(segments)
+    caption = generate_caption(segments)
 
     # -------------------------
     # THUMBNAIL GENERATION
