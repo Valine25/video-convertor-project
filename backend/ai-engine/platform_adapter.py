@@ -32,7 +32,8 @@ def convert_clip(input_video, platform="shorts"):
         "ffmpeg",
         "-i", input_video,
         "-vf",
-        f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}",
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black",
         "-preset", "ultrafast",
         "-c:v", "libx264",
         "-c:a", "copy",
