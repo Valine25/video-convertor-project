@@ -83,21 +83,21 @@ print(
     file=sys.stderr
 )
 
-# KANNADA -> USE BETTER MODEL
-if language == "kn":
+# # KANNADA -> USE BETTER MODEL
+# if language == "kn":
 
-    print(
-        "Kannada detected. Switching to SMALL model...",
-        file=sys.stderr
-    )
+#     print(
+#         "Kannada detected. Switching to SMALL model...",
+#         file=sys.stderr
+#     )
 
-    small_model = whisper.load_model("small")
+#     small_model = whisper.load_model("small")
 
-    result = small_model.transcribe(
-        audio_path,
-        word_timestamps=True,
-        task="transcribe"
-    )
+#     result = small_model.transcribe(
+#         audio_path,
+#         word_timestamps=True,
+#         task="transcribe"
+#     )
 
 transcript = result["text"]
 
