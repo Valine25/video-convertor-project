@@ -222,6 +222,12 @@ function LoginPage() {
 
                 </div>
 
+                <div className="auth-footer auth-footer-small">
+                  <Link className="auth-link" to="/forgot-password">
+                    Forgot your password?
+                  </Link>
+                </div>
+
                 <button
                   type="submit"
                   className="btn btn-accent auth-submit"

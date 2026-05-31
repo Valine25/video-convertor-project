@@ -17,6 +17,14 @@ const creatorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    passwordResetToken: {
+      type: String,
+    },
+
+    passwordResetExpires: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
