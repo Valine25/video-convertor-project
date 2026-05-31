@@ -64,40 +64,15 @@ print("Frames extracted")
 # 3. Speech-to-Text
 # -------------------------
 
-# FAST MODEL FIRST
-tiny_model = whisper.load_model("tiny")
+# FIRST PASS - FAST DETECTION
+base_model = whisper.load_model("base")
 
-result = tiny_model.transcribe(
+result = base_model.transcribe(
     audio_path,
     word_timestamps=True,
     task="transcribe"
 )
 
-language = result.get(
-    "language",
-    "unknown"
-)
-
-print(
-    f"Detected language: {language}",
-    file=sys.stderr
-)
-
-# # KANNADA -> USE BETTER MODEL
-# if language == "kn":
-
-#     print(
-#         "Kannada detected. Switching to SMALL model...",
-#         file=sys.stderr
-#     )
-
-#     small_model = whisper.load_model("small")
-
-#     result = small_model.transcribe(
-#         audio_path,
-#         word_timestamps=True,
-#         task="transcribe"
-#     )
 
 transcript = result["text"]
 

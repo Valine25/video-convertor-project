@@ -167,4 +167,3 @@ def generate_thumbnail(frame_folder, video_path):
     best_frame = get_best_thumbnail(frame_folder)
     return save_thumbnail(best_frame, video_path)
 
-
