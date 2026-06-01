@@ -503,45 +503,75 @@ def build_story(scored, duration):
 def compute_virality_score(story):
 
     if not story:
-        return 0.0
+        return 0
 
-    hook_score = story[0]["score"] / 10
+    def normalize(score):
+        return min(
+            1.0,
+            max(
+                0.0,
+                (score - 4) / 3
+            )
+        )
 
-    avg_score = (
-        sum(c["score"] for c in story) /
-        len(story) / 10
+    hook_score = normalize(
+        story[0]["score"]
     )
 
-    scores = [c["score"] for c in story]
+    avg_score = normalize(
+        sum(
+            c["score"]
+            for c in story
+        ) / len(story)
+    )
+
+    end_score = normalize(
+        story[-1]["score"]
+    )
+
+    scores = [
+        c["score"]
+        for c in story
+    ]
 
     variation = (
-        min(1.0, np.std(scores) / 10)
-        if len(scores) > 1 else 0
+        min(
+            1.0,
+            np.std(scores) / 2
+        )
+        if len(scores) > 1
+        else 0
     )
-
-    end_score = story[-1]["score"] / 10
 
     flow_penalty = 0
 
     for i in range(1, len(story)):
 
-        gap = story[i]["start"] - story[i - 1]["end"]
+        gap = (
+            story[i]["start"]
+            - story[i - 1]["end"]
+        )
 
         if gap > 60:
             flow_penalty += 0.05
 
-    flow_score = max(0, 1 - flow_penalty)
-
-    virality = (
-        0.30 * hook_score +
-        0.25 * avg_score +
-        0.15 * variation +
-        0.20 * end_score +
-        0.10 * flow_score
+    flow_score = max(
+        0,
+        1 - flow_penalty
     )
 
-    return round(min(10, virality * 10), 1)
+    virality = (
+        0.25 * hook_score +
+        0.25 * avg_score +
+        0.20 * end_score +
+        0.15 * variation +
+        0.15 * flow_score
+    )
 
+    return round(
+        virality * 10,
+        1
+    )
 
 # -------------------------
 # MAIN

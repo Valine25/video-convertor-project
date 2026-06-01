@@ -121,6 +121,10 @@ function DashboardPage() {
       ),
     [videos]
   );
+  const isProcessing =
+  activeVideo &&
+  activeVideo.status !== "completed" &&
+  activeVideo.status !== "failed";
 
   const loadVideos = useCallback(async () => {
     if (!currentUser?._id) return;
@@ -502,10 +506,14 @@ const handleCopyHashtags = async () => {
 
   </div>
 
-{uploading ? (
+{isProcessing ? (
 
-  <div className="loading-box">
-    Generating captions...
+  <div className="skeleton-container">
+
+    <div className="skeleton-line"></div>
+    <div className="skeleton-line medium"></div>
+    <div className="skeleton-line short"></div>
+
   </div>
 
 ) : activeVideoCaptions.length ? (
@@ -554,13 +562,19 @@ const handleCopyHashtags = async () => {
         <h3>Virality Score</h3>
       </div>
 
-      {uploading ? (
+{isProcessing ? (
 
-        <div className="loading-box">
-          Analyzing virality...
-        </div>
+  <div className="viral-score-box">
 
-      ) : (
+    <div className="viral-score loading-score">
+      ...
+    </div>
+
+    <p>Analyzing engagement...</p>
+
+  </div>
+
+) : (
 
         <div className="viral-score-box">
 
@@ -594,13 +608,18 @@ const handleCopyHashtags = async () => {
 
     </div>
 
-    {uploading ? (
+{isProcessing ? (
 
-      <div className="loading-box">
-        Generating hashtags...
-      </div>
+  <div className="hashtag-wrap">
 
-    ) : (
+    <div className="skeleton-line short"></div>
+    <div className="skeleton-line short"></div>
+    <div className="skeleton-line short"></div>
+    <div className="skeleton-line short"></div>
+
+  </div>
+
+) : (
 <div className="hashtag-wrap">
 
   {activeVideo?.hashtags?.length ? (

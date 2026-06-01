@@ -65,7 +65,7 @@ print("Frames extracted")
 # -------------------------
 
 # FIRST PASS - FAST DETECTION
-base_model = whisper.load_model("base")
+base_model = whisper.load_model("tiny")
 
 result = base_model.transcribe(
     audio_path,

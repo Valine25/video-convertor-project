@@ -1,0 +1,84 @@
+/* =========================
+   SHIMMER LOADER
+========================= */
+
+.skeleton-container {
+  width: 100%;
+}
+
+.skeleton-line {
+  height: 18px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.08) 25%,
+    rgba(255,255,255,0.25) 50%,
+    rgba(255,255,255,0.08) 75%
+  );
+
+  background-size: 200% 100%;
+
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line.short {
+  width: 70%;
+}
+
+.skeleton-line.medium {
+  width: 85%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+
+/* Caption slide animation */
+
+.caption-card {
+  animation: slideDown .6s ease;
+}
+
+.hashtag-pill {
+  animation: slideDown .6s ease;
+}
+
+@keyframes slideDown {
+
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.loading-score {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+
+  0% {
+    opacity: .4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: .4;
+  }
+}
