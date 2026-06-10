@@ -20,25 +20,18 @@ const videoSchema = new mongoose.Schema(
       },
     ],
 
-    // MAIN GENERATED REEL
-    generatedReel: String,
+       generatedReel: String,
 
-    // 9:16 VERSION
     platformReel: String,
 
-    // AI THUMBNAIL
     thumbnail: String,
 
-    // CAPTIONS
     captions: [String],
 
-    // HASHTAGS
     hashtags: [String],
 
-    // SCORE
     viralityScore: Number,
 
-    // USER
     userId: String,
   },
 

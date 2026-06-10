@@ -60,19 +60,65 @@ cap.release()
 
 print("Frames extracted")
 
+
 # -------------------------
 # 3. Speech-to-Text
 # -------------------------
 
-# FIRST PASS - FAST DETECTION
-base_model = whisper.load_model("tiny")
+# FIRST PASS - LANGUAGE DETECTION
+tiny_model = whisper.load_model("tiny")
 
-result = base_model.transcribe(
+detection_result = tiny_model.transcribe(
+    audio_path,
+    task="transcribe"
+)
+
+language = detection_result.get(
+    "language",
+    "unknown"
+)
+
+print(
+    f"Detected language: {language}",
+    file=sys.stderr
+)
+
+# SELECT MODEL BASED ON LANGUAGE
+
+if language == "en":
+
+    print(
+        "English detected. Using TINY model...",
+        file=sys.stderr
+    )
+
+    model = tiny_model
+
+elif language in ["hi", "kn"]:
+
+    print(
+        "Hindi/Kannada detected. Using BASE model...",
+        file=sys.stderr
+    )
+
+    model = whisper.load_model("base")
+
+else:
+
+    print(
+        "Unknown language. Using BASE model...",
+        file=sys.stderr
+    )
+
+    model = whisper.load_model("base")
+
+# FINAL TRANSCRIPTION
+
+result = model.transcribe(
     audio_path,
     word_timestamps=True,
     task="transcribe"
 )
-
 
 transcript = result["text"]
 

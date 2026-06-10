@@ -23,30 +23,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// =========================
-// ROUTES
-// =========================
 
-// Upload Video
 router.post(
   "/upload",
   upload.single("video"),
   videoController.uploadVideo
 );
 
-// Get One Video
+
 router.get(
   "/:id",
   videoController.getVideoById
 );
 
-// Get User History
 router.get(
   "/user/:userId",
   videoController.getUserVideos
 );
 
-// Delete Video
 router.delete(
   "/:id",
   videoController.deleteVideo
