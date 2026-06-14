@@ -149,14 +149,6 @@ Thumbnail Generation
 
 ---
 
-# 📸 Screenshots
-
-## Dashboard
-
-![Dashboard](screenshots/dashboard.png)
-
----
-
 ## Homepage
 
 ![Homepage](screenshots/homepage.png)
