@@ -78,6 +78,18 @@ Automatically generates thumbnails using:
 
 ---
 
+## 📈 AI Virality Score Prediction
+
+Generates an estimated virality score based on:
+
+* Hook strength
+* Emotional impact
+* Story continuity
+* Highlight quality
+* Content variation
+
+---
+
 ## 📂 Upload History
 
 * Stores generated videos
