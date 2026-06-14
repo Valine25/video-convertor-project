@@ -83,7 +83,6 @@ print(
     file=sys.stderr
 )
 
-# SELECT MODEL BASED ON LANGUAGE
 
 if language == "en":
 
@@ -112,7 +111,6 @@ else:
 
     model = whisper.load_model("base")
 
-# FINAL TRANSCRIPTION
 
 result = model.transcribe(
     audio_path,
@@ -131,7 +129,6 @@ os.makedirs(
     exist_ok=True
 )
 
-# Save transcript
 with open(
     "ai-engine/transcript.txt",
     "w",

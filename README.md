@@ -137,6 +137,53 @@ Thumbnail Generation
 
 ---
 
+# 📸 Screenshots
+
+## Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+---
+
+## Homepage
+
+![Homepage](screenshots/homepage.png)
+
+---
+
+## Video Upload
+
+![Upload](screenshots/upload.png)
+
+---
+
+## Generated Reel & Platform Reel
+
+![Reel](screenshots/reel.png)
+
+---
+
+## AI Generated Caption , Hashtags and Virality Score
+
+![Caption](screenshots/captions.png)
+
+---
+
+## Thumbnail Generation
+
+![Thumbnail](screenshots/thumbnail.png)
+
+---
+
+## Upload History
+
+![History](screenshots/history.png)
+
+
+# 🏗️ System Architecture
+
+![Architecture](screenshots/architecture.png)
+
 
 # 🚀 Installation
 
